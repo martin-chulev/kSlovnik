@@ -15,6 +15,8 @@ namespace kSlovnik.Resources
 
         public static Dictionary<char, Image> LetterImagesActive = new Dictionary<char, Image>();
         public static Dictionary<char, Image> LetterImagesInactive = new Dictionary<char, Image>();
+        public static Dictionary<char, Image> LetterImagesActiveBlank = new Dictionary<char, Image>();
+        public static Dictionary<char, Image> LetterImagesInactiveBlank = new Dictionary<char, Image>();
         public static Dictionary<string, Image> TileImages = new Dictionary<string, Image>();
 
         public static void LoadImages()
@@ -37,6 +39,24 @@ namespace kSlovnik.Resources
                 LetterImagesInactive.Add(Path.GetFileNameWithoutExtension(letterImagePath)[0], Image.FromFile(letterImagePath).ToSize(Board.Board.SlotSize - Board.Board.SlotBorderSize));
             }
 
+            // Active pieces (colored) for blank piece
+            var letterImagePathsActiveBlank = Directory.GetFiles($@"{LettersFolderPath}\ActiveBlank");
+
+            LetterImagesActiveBlank.Clear();
+            foreach (var letterImagePath in letterImagePathsActiveBlank)
+            {
+                LetterImagesActiveBlank.Add(Path.GetFileNameWithoutExtension(letterImagePath)[0], Image.FromFile(letterImagePath).ToSize(Board.Board.SlotSize - Board.Board.SlotBorderSize));
+            }
+
+            // Inactive pieces (greyed out) for blank piece
+            var letterImagePathsInactiveBlank = Directory.GetFiles($@"{LettersFolderPath}\InactiveBlank");
+
+            LetterImagesInactiveBlank.Clear();
+            foreach (var letterImagePath in letterImagePathsInactiveBlank)
+            {
+                LetterImagesInactiveBlank.Add(Path.GetFileNameWithoutExtension(letterImagePath)[0], Image.FromFile(letterImagePath).ToSize(Board.Board.SlotSize - Board.Board.SlotBorderSize));
+            }
+
             // Board tiles
             var tileImagePaths = Directory.GetFiles(TilesFolderPath);
 
@@ -53,7 +73,7 @@ namespace kSlovnik.Resources
         /// <param name="image">The image to resize.</param>
         /// <param name="size">The width and height to resize to.</param>
         /// <returns>The resized image.</returns>
-        private static Bitmap ToSize(this Image image, int size)
+        public static Bitmap ToSize(this Image image, int size)
         {
             return image.ToSize(size, size);
         }
@@ -65,7 +85,7 @@ namespace kSlovnik.Resources
         /// <param name="width">The width to resize to.</param>
         /// <param name="height">The height to resize to.</param>
         /// <returns>The resized image.</returns>
-        private static Bitmap ToSize(this Image image, int width, int height)
+        public static Bitmap ToSize(this Image image, int width, int height)
         {
             var destRect = new Rectangle(0, 0, width, height);
             var destImage = new Bitmap(width, height);
