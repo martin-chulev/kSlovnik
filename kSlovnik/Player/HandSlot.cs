@@ -38,7 +38,9 @@ namespace kSlovnik.Player
             {
                 Letter = piece.Value;
                 Color = setColor ? Constants.DeckInfo.PieceColors[piece.Value] : Color;
-                Image = Resources.ImageController.LetterImagesActive[piece.Value];
+                Image = Color == Constants.Colors.TileColors.Grey ?
+                    Resources.ImageController.LetterImagesActiveBlank[piece.Value] :
+                    Resources.ImageController.LetterImagesActive[piece.Value];
                 Visible = true;
             }
         }
@@ -60,7 +62,7 @@ namespace kSlovnik.Player
                 if (Prompt.ChooseLetter(out var newLetter))
                 {
                     Letter = newLetter;
-                    Image = Resources.ImageController.LetterImagesActive[newLetter];
+                    Image = Resources.ImageController.LetterImagesActiveBlank[newLetter];
                 }
                 else
                 {

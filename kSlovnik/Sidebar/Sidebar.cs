@@ -14,6 +14,7 @@ namespace kSlovnik.Sidebar
         public static Panel SidebarPanel;
         public static ShadowedPanel MenuContainer;
         public static ShadowedPanel ScoreboardContainer;
+        public static Grid<Player.Player> ScoreboardGrid;
         public static Label TurnPlayerLabel;
         public static Panel HandPanelContainer;
         public static ShadowedPanel HandPanelOuter;

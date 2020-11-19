@@ -18,8 +18,8 @@ namespace kSlovnik.Game
         {
             Game.Current = new Game();
 
-            Game.Current.Players.Add(new Player.Player());
-            Game.Current.Players.Add(new Player.Player());
+            Game.Current.Players.Add(new Player.Player(avatar: ImageController.LetterImagesActive['а']));
+            Game.Current.Players.Add(new Player.Player(avatar: ImageController.LetterImagesActive['б']));
             Game.Current.CurrentPlayerIndex = 0;
             SidebarController.RenderTurnPlayerLabel();
 
@@ -42,12 +42,15 @@ namespace kSlovnik.Game
                     return;
 
                 Game.Current.TurnsWithoutPlacement = 0;
+                Game.Current.CurrentPlayer.TurnsPlayed++;
+                Game.Current.CurrentPlayer.Score += CalculatePoints(placedPieces);
                 HandController.ConfirmAll();
                 SidebarController.RenderWords();
             }
             else
             {
                 Game.Current.TurnsWithoutPlacement++;
+                Game.Current.CurrentPlayer.TurnsPlayed++;
                 if (Game.Current.TurnsWithoutPlacement == 2 * Game.Current.Players.Count)
                 {
                     EndGame(Constants.GameEndReason.NoMoreTurns);
@@ -68,6 +71,7 @@ namespace kSlovnik.Game
             }
 
             SidebarController.RenderTurnPlayerLabel();
+            SidebarController.RenderScoreboard();
             HandController.LoadHand(Game.Current.CurrentPlayer);
         }
 
@@ -326,13 +330,24 @@ namespace kSlovnik.Game
                 if (placedPiece.CurrentBoardSlot == Board.Board.CenterSlot) return true;
 
                 var position = placedPiece.CurrentBoardSlot.Position;
-                if (Board.Board.Slots[position.Row - 1, position.Column].IsFilled) return true;
-                if (Board.Board.Slots[position.Row + 1, position.Column].IsFilled) return true;
-                if (Board.Board.Slots[position.Row, position.Column - 1].IsFilled) return true;
-                if (Board.Board.Slots[position.Row, position.Column + 1].IsFilled) return true;
+                if ((position.Row - 1).Between(0, Board.Board.Rows) &&
+                    position.Column.Between(0, Board.Board.Columns) &&
+                    Board.Board.Slots[position.Row - 1, position.Column].IsFilled) return true;
+
+                if ((position.Row + 1).Between(0, Board.Board.Rows) &&
+                    position.Column.Between(0, Board.Board.Columns) && 
+                    Board.Board.Slots[position.Row + 1, position.Column].IsFilled) return true;
+
+                if (position.Row.Between(0, Board.Board.Rows) &&
+                    (position.Column - 1).Between(0, Board.Board.Columns) && 
+                    Board.Board.Slots[position.Row, position.Column - 1].IsFilled) return true;
+
+                if (position.Row.Between(0, Board.Board.Rows) &&
+                    (position.Column + 1).Between(0, Board.Board.Columns) && 
+                    Board.Board.Slots[position.Row, position.Column + 1].IsFilled) return true;
             }
 
-            return true;
+            return false;
         }
 
         public static void EndGame(Constants.GameEndReason reason)

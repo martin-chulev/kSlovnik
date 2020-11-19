@@ -67,15 +67,33 @@ namespace kSlovnik.Sidebar
             };
             Sidebar.ScoreboardContainer.DropShadow();
             Sidebar.SidebarPanel.Controls.Add(Sidebar.ScoreboardContainer);
-            /*var highscorePanel = new Panel
+            Sidebar.ScoreboardGrid = new Grid<Player.Player>(Constants.Fonts.ScoreboardGrid)
             {
-                ////
                 Location = new Point(0, 0),
-                Width = width,
-                Height = Board.Board.Rows * Board.Board.SlotSize,
-                BackColor = Constants.Colors.SidebarColor,
+                Width = sidebarContentWidth,
+                Height = Sidebar.ScoreboardContainer.Height,
+                BackColor = Constants.Colors.GridBackColor
             };
-            highscoreContainer.Controls.Add(highscorePanel);*/
+            Sidebar.ScoreboardGrid.StylesApplied += new Grid<Player.Player>.ExtraStyleFilter((Grid<Player.Player>.Row row, Player.Player player) =>
+            {
+                if (player != null && player.IsInTurn)
+                {
+                    row.Font = new Font(row.Font, FontStyle.Bold);
+                    row.ForeColor = Constants.Colors.FontBlue;
+                }
+                else
+                {
+                    row.Font = new Font(row.Font, FontStyle.Regular);
+                    row.ForeColor = Color.Black;
+                }
+            });
+            Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(nameof(Player.Player.Avatar), null, 8, ContentAlignment.MiddleCenter, new Func<Player.Player, object, bool>((player, data) => player != null ? player.IsInTurn : false)));
+            Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(nameof(Player.Player.Name), "Играчи", 42, ContentAlignment.MiddleLeft));
+            Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(nameof(Player.Player.TurnsPlayed), "Ходове", 20, ContentAlignment.MiddleRight));
+            Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(nameof(Player.Player.Score), "Точки", 20, ContentAlignment.MiddleRight));
+            Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(null, null, 10, ContentAlignment.MiddleRight));
+            Sidebar.ScoreboardGrid.Init();
+            Sidebar.ScoreboardContainer.Controls.Add(Sidebar.ScoreboardGrid);
 
             currentStartingY += Sidebar.ScoreboardContainer.Height + (Constants.SidebarSeparatorHeight / 2);
             #endregion
@@ -220,6 +238,14 @@ namespace kSlovnik.Sidebar
                 Height = Sidebar.WordsContainer.Height,
                 BackColor = Constants.Colors.GridBackColor
             };
+            Sidebar.WordsGrid.StylesApplied += new Grid<Word>.ExtraStyleFilter((Grid<Word>.Row row, Word word) =>
+            {
+                row.Font = new Font(row.Font, FontStyle.Bold);
+                if (word != null)
+                {
+                    row.ForeColor = word.IsValid ? Constants.Colors.FontBlue : Constants.Colors.FontRed;
+                }
+            });
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.IsValid), null, 10, ContentAlignment.MiddleCenter));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.Text), "Думи", 55, ContentAlignment.MiddleLeft));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.Points), "Точки", 25, ContentAlignment.MiddleRight));
@@ -231,15 +257,15 @@ namespace kSlovnik.Sidebar
 
         public static void RenderSidebar()
         {
-            RenderHighscores();
+            RenderScoreboard();
             RenderTurnPlayerLabel();
             RenderPiecesInDeckLabel();
             RenderWords();
         }
 
-        public static void RenderHighscores()
+        public static void RenderScoreboard()
         {
-
+            Sidebar.ScoreboardGrid.DataSource = Game.Game.Current.Players;
         }
 
         public static void RenderTurnPlayerLabel()

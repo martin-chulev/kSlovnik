@@ -1,4 +1,5 @@
 ﻿using kSlovnik.Generic;
+using kSlovnik.Resources;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -34,7 +35,15 @@ namespace kSlovnik.Controls
 
         public List<Column> Columns { get; }
 
+        // TODO: Add setter which updates font for each Row
         public new Font Font { get; }
+
+        public delegate void ExtraStyleFilter(Row row, T item);
+        public event ExtraStyleFilter StylesApplied;
+        private void OnStylesApplied(Row row, T item)
+        {
+            StylesApplied?.Invoke(row, item);
+        }
 
         public Grid(Font font)
         {
@@ -57,7 +66,7 @@ namespace kSlovnik.Controls
                 currentStartingY = this.HeaderRow.Bottom;
             }
 
-            var rowHeight = Font.Height + 10;
+            var rowHeight = Font.Height + Constants.GridRowPadding;
             var rowCount = (Height - currentStartingY) / rowHeight;
 
             for (int i = 0; i < rowCount; i++)
@@ -72,6 +81,7 @@ namespace kSlovnik.Controls
             this.IsInitialized = true;
         }
 
+        // TODO: Add a way to iterate pages
         private void RefreshData(int page = 0)
         {
             if (this.IsInitialized == false) throw new Exception($"Grid hasn't been initialized yet. Call {nameof(Init)} first.");
@@ -80,8 +90,8 @@ namespace kSlovnik.Controls
 
             if (this.dataSource.Count > 0)
             {
-                var startIndex =  (this.dataSource.Count / this.DataRows.Count) * page + this.dataSource.Count % this.DataRows.Count - 1;
-                var endIndex = this.dataSource.Count - 1;
+                var startIndex =  (this.dataSource.Count / this.DataRows.Count) * page;
+                var endIndex = startIndex + this.dataSource.Count % this.DataRows.Count - 1;
                 for (int i = 0; i < this.DataRows.Count; i++)
                 {
                     if (startIndex + i <= endIndex)
@@ -103,20 +113,28 @@ namespace kSlovnik.Controls
         {
             public string PropertyName { get; set; }
             public string Header { get; set; }
+            public Func<T, object, bool> ShowValue { get; set; }
             public int WidthPercent { get; set; } // TODO: Add checks or scale percentages of all headers down if >100
             public ContentAlignment TextAlign { get; set; }
 
-            public Column(string propertyName, string text, int widthPercent, ContentAlignment textAlign)
+            public Column(string propertyName, string text, int widthPercent, ContentAlignment textAlign) :
+                this(propertyName, text, widthPercent, textAlign, new Func<T, object, bool>((item, data) => true))
+            {
+            }
+
+            public Column(string propertyName, string text, int widthPercent, ContentAlignment textAlign, Func<T, object, bool> showValue)
             {
                 this.PropertyName = propertyName;
                 this.Header = text;
                 this.WidthPercent = widthPercent;
                 this.TextAlign = textAlign;
+                this.ShowValue = showValue;
             }
         }
 
         public class Row : Panel
         {
+            private T item;
             public bool IsHeader { get; }
             public List<Column> Columns { get; }
 
@@ -128,14 +146,14 @@ namespace kSlovnik.Controls
             {
                 this.IsHeader = true;
                 this.Width = width;
-                this.Height = height ?? font.Height * 2 + 10;
+                this.Height = height ?? (int)(font.Height * 1.5) + Constants.GridRowPadding;
                 this.BorderStyle = BorderStyle.FixedSingle;
                 this.Font = font;
 
                 var currentStartingX = 0;
                 for (int i = 0; i < columns.Count; i++)
                 {
-                    var cell = CreateCell(i, currentStartingX, columns[i].WidthPercent, this.Font, columns[i].TextAlign, columns[i].Header);
+                    var cell = CreateCell(i, currentStartingX, columns[i].WidthPercent, columns[i].TextAlign, columns[i].Header);
                     this.Controls.Add(cell);
                     currentStartingX += cell.Width;
                 }
@@ -148,28 +166,20 @@ namespace kSlovnik.Controls
             /// <param name="item"></param>
             public Row(int offsetY, List<Column> columns, T item, int width, Font font, int? height = null)
             {
+                this.item = item;
                 this.IsHeader = false;
                 this.Columns = new List<Column>(columns);
                 this.Width = width;
-                this.Height = height ?? font.Height + 10;
+                this.Height = height ?? font.Height + Constants.GridRowPadding;
                 this.Top = offsetY;
                 this.BorderStyle = BorderStyle.FixedSingle;
                 this.Font = font;
-
-                if(typeof(T) == typeof(Word))
-                {
-                    this.Font = new Font(font, FontStyle.Bold);
-                    if (item is Word word)
-                    {
-                        this.ForeColor = word.IsValid ? Constants.Colors.FontBlue : Constants.Colors.FontRed;
-                    }
-                }
 
                 var currentStartingX = 0;
                 for (int i = 0; i < this.Columns.Count; i++)
                 {
                     var data = this.Columns[i].PropertyName != null && item != null ? typeof(T).GetProperty(this.Columns[i].PropertyName)?.GetValue(item) : null;
-                    var cell = CreateCell(i, currentStartingX, this.Columns[i].WidthPercent, this.Font, this.Columns[i].TextAlign, data);
+                    var cell = CreateCell(i, currentStartingX, this.Columns[i].WidthPercent, this.Columns[i].TextAlign, data);
                     this.Controls.Add(cell);
                     currentStartingX = cell.Right;
                 }
@@ -177,19 +187,29 @@ namespace kSlovnik.Controls
 
             public void SetItem(T item)
             {
+                this.item = item;
+
                 foreach (var control in this.Controls)
                 {
                     if (control is Cell cell)
                     {
                         var i = cell.Index;
                         var data = this.Columns[i].PropertyName != null && item != null ? typeof(T).GetProperty(this.Columns[i].PropertyName)?.GetValue(item) : null;
-                        cell.Value = data;
-
-                        if (item is Word word)
-                        {
-                            this.ForeColor = word.IsValid ? Constants.Colors.FontBlue : Constants.Colors.FontRed;
-                        }
+                        cell.Value = this.Columns[i].ShowValue(item, data) == true ? data : null;
                     }
+                }
+
+                if (this.Parent is Grid<T> grid)
+                {
+                    grid.OnStylesApplied(this, this.item);
+                }
+            }
+
+            protected override void OnParentChanged(EventArgs e)
+            {
+                if (this.Parent is Grid<T> grid && this != grid.HeaderRow)
+                {
+                    grid.OnStylesApplied(this, this.item);
                 }
             }
 
@@ -200,7 +220,7 @@ namespace kSlovnik.Controls
             /// <param name="widthPercent">Percent of the row width.</param>
             /// <param name="data">The data to display in the cell.</param>
             /// <returns>The new cell</returns>
-            private Control CreateCell(int index, int offsetX, int widthPercent, Font font, ContentAlignment textAlign, object data)
+            private Control CreateCell(int index, int offsetX, int widthPercent, ContentAlignment textAlign, object data)
             {
                 var cell = new Cell
                 {
@@ -209,7 +229,7 @@ namespace kSlovnik.Controls
                     Width = this.Width * widthPercent / 100,
                     Height = this.Height,
                     TextAlign = textAlign,
-                    Font = font,
+                    ImageAlign = textAlign,
                     Value = data
                 };
 
@@ -219,19 +239,42 @@ namespace kSlovnik.Controls
 
         public class Cell : Label
         {
+            public object value;
+
             public int Index { get; set; }
 
             public object Value
             {
-                get => this.Text;
+                get
+                {
+                    if (this.value is Image)
+                    {
+                        return this.Image;
+                    }
+                    else
+                    {
+                        return this.Text;
+                    }
+                }
                 set
                 {
-                    this.Text = value switch
+                    if (value is Image image)
                     {
-                        true => "✓",
-                        false => value is Word ? "✗" : null,
-                        _ => value?.ToString()
-                    };
+                        this.Text = string.Empty;
+                        this.Image = image.ToSize((int)(this.Height * 0.7));
+                        this.value = this.Image;
+                    }
+                    else
+                    {
+                        this.Text = value switch
+                        {
+                            true => "✓",
+                            false => value is Word ? "✗" : null,
+                            _ => value?.ToString()
+                        };
+                        this.Image = null;
+                        this.value = this.Text;
+                    }
                 }
             }
         }

@@ -123,5 +123,10 @@ namespace kSlovnik
         {
             return control.Location.PlusX((int)(control.Width / 2)).PlusY((int)(control.Height / 2));
         }
+
+        public static bool Between(this int value, int minInclusive, int maxExclusive)
+        {
+            return value >= minInclusive && value < maxExclusive;
+        }
     }
 }

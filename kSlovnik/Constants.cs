@@ -52,6 +52,7 @@ namespace kSlovnik
         public static class Fonts
         {
             public static readonly Font Default = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
+            public static readonly Font ScoreboardGrid = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
             public static readonly Font WordsGrid = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
         }
 
@@ -70,6 +71,7 @@ namespace kSlovnik
         public const int SidebarSeparatorHeight = 10;
         public const int HandTileSeparatorWidth = 0;
         public const int SeparatorWidth = 24;
+        public const int GridRowPadding = 10;
 
         public const int TileBorderWidth = 1;
 

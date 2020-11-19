@@ -53,7 +53,9 @@ namespace kSlovnik.Board
             if (this.IsPending)
             {
                 Letter = PendingPiece.Letter;
-                Image = Resources.ImageController.LetterImagesInactive[PendingPiece.Letter];
+                Image = PendingPiece.Color == Constants.Colors.TileColors.Grey ?
+                    Resources.ImageController.LetterImagesInactiveBlank[PendingPiece.Letter] :
+                        Resources.ImageController.LetterImagesInactive[PendingPiece.Letter];
                 Color = PendingPiece.Color;
 
                 PendingPiece.Clear();

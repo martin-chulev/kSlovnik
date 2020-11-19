@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Text;
 
 namespace kSlovnik.Player
@@ -8,16 +9,26 @@ namespace kSlovnik.Player
     {
         public string Name { get; set; }
 
+        public Image Avatar { get; set; }
+
         public Hand Hand { get; set; }
 
         public int Score { get; set; }
 
+        public int TurnsPlayed { get; set; }
+
         public bool IsAI { get; set; }
 
-        public Player(string name = null, bool isAI = false)
+        public bool IsInTurn { get => Game.Game.Current.CurrentPlayer == this; }
+
+        public Player(string name = null, Image avatar = null, bool isAI = false)
         {
             this.Name = name ?? "Играч " + (Game.Game.Current.Players.Count + 1);
+            this.Avatar = avatar;
             this.Hand = new Hand();
+            this.Score = 0;
+            this.TurnsPlayed = 0;
+            this.IsAI = isAI;
         }
     }
 }
