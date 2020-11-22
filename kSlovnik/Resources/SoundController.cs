@@ -9,11 +9,36 @@ namespace kSlovnik.Resources
     {
         public const string SoundsFolderPath = @"Resources\Sounds";
 
-        public static System.Media.SoundPlayer Click;
+        public static GameSoundPlayer Click;
 
         public static void LoadSounds()
         {
-            Click = new System.Media.SoundPlayer(Path.Combine(SoundsFolderPath, @"click.wav"));
+            Click = new GameSoundPlayer(Path.Combine(SoundsFolderPath, @"click.wav"));
+        }
+
+        public class GameSoundPlayer
+        {
+            private System.Media.SoundPlayer sound;
+
+            public GameSoundPlayer(string soundPath)
+            {
+                this.sound = new System.Media.SoundPlayer(soundPath);
+            }
+
+            public void Play()
+            {
+                if (Constants.UserSettings.SoundsOn)
+                {
+                    try
+                    {
+                        sound.Play();
+                    }
+                    catch
+                    {
+                        // TODO: Log
+                    }
+                }
+            }
         }
     }
 }

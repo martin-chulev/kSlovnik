@@ -19,6 +19,9 @@ namespace kSlovnik.Resources
         public static Dictionary<char, Image> LetterImagesInactiveBlank = new Dictionary<char, Image>();
         public static Dictionary<string, Image> TileImages = new Dictionary<string, Image>();
 
+        public static Image MenuItemToggleOnImage = CreateImage(Color.Transparent, 30, 30, Color.Transparent, text: "✓", font: new Font(Constants.Fonts.Default, FontStyle.Bold), fontColor: Color.Black);
+        public static Image MenuItemToggleOffImage = CreateImage(Color.Transparent, 30, 30, Color.Transparent);
+
         public static void LoadImages()
         {
             // Active pieces (colored)
@@ -108,6 +111,52 @@ namespace kSlovnik.Resources
             }
 
             return destImage;
+        }
+
+        public static Image CreateImage(Color color, int width, int height, Color borderColor, int borderLeft = 0, int borderRight = 0, int borderTop = 0, int borderBottom = 0, string text = null, Font font = null, Color? fontColor = null)
+        {
+            Bitmap bitmap = new Bitmap(width, height);
+            using (Graphics gfx = Graphics.FromImage(bitmap))
+            using (SolidBrush borderBrush = new SolidBrush(borderColor))
+            using (SolidBrush brush = new SolidBrush(color))
+            using (SolidBrush fontBrush = new SolidBrush(fontColor ?? Color.Black))
+            {
+                gfx.FillRectangle(borderBrush, 0, 0, width, height);
+
+                var contentRectangle = new RectangleF(borderLeft, borderTop, width - (borderLeft + borderRight), height - (borderTop + borderBottom));
+                gfx.FillRectangle(brush, contentRectangle);
+
+                StringFormat sf = new StringFormat();
+                sf.LineAlignment = StringAlignment.Center;
+                sf.Alignment = StringAlignment.Center;
+
+                float emSize = height;
+                font = font ?? Constants.Fonts.Default;
+                font = new Font(font.FontFamily, emSize, font.Style);
+                font = FindBestFitFont(gfx, text, font, contentRectangle.Size);
+
+                gfx.DrawString(text, font, fontBrush, contentRectangle, sf);
+
+                return bitmap;
+            }
+        }
+
+        private static Font FindBestFitFont(Graphics gfx, string text, Font font, SizeF proposedSize)
+        {
+            // Compute actual size, shrink if needed
+            while (true)
+            {
+                SizeF size = gfx.MeasureString(text, font);
+
+                // It fits, back out
+                if (size.Height <= proposedSize.Height &&
+                     size.Width <= proposedSize.Width) { return font; }
+
+                // Try a smaller font (90% of old size)
+                Font oldFont = font;
+                font = new Font(font.Name, (float)(font.Size * .9), font.Style);
+                oldFont.Dispose();
+            }
         }
     }
 }

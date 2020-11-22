@@ -1,3 +1,4 @@
+using kSlovnik.Windows;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +21,7 @@ namespace kSlovnik
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            Constants.UserSettings.Load();
             MainView = new MainView();
             Application.Run(MainView);
         }

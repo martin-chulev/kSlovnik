@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace kSlovnik.Game
@@ -18,8 +19,9 @@ namespace kSlovnik.Game
         {
             Game.Current = new Game();
 
-            Game.Current.Players.Add(new Player.Player(avatar: ImageController.LetterImagesActive['а']));
-            Game.Current.Players.Add(new Player.Player(avatar: ImageController.LetterImagesActive['б']));
+            Game.Current.Players.Add(new Player.Player("Easy", ImageController.LetterImagesActive['а'], new AI.AI(AI.Difficulty.Easy)));
+            Game.Current.Players.Add(new Player.Player("Medium", ImageController.LetterImagesActive['б'], new AI.AI(AI.Difficulty.Medium)));
+            Game.Current.Players.Add(new Player.Player("Hard", ImageController.LetterImagesActive['в'], new AI.AI(AI.Difficulty.Hard)));
             Game.Current.CurrentPlayerIndex = 0;
             SidebarController.RenderTurnPlayerLabel();
 
@@ -27,25 +29,35 @@ namespace kSlovnik.Game
             HandController.LoadHand(Game.Current.CurrentPlayer);
         }
 
-        public static void EndTurn()
+        public static async Task EndTurn()
+        {
+            await Task.Run(() =>
+            {
+                if (EndCurrentTurn())
+                    StartNextTurn();
+            });
+        }
+
+        private static bool EndCurrentTurn()
         {
             // Get all placed pieces
             var placedPieces = HandController.HandSlots.Where(s => s.IsPlaced).ToList();
 
             if (PiecePlacementIsValid(placedPieces) == false)
-                return;
+                return false;
 
             if (placedPieces.Any())
             {
                 var words = GetNewWords(placedPieces);
-                if (words == null || words.Count == 0 || words.Any(w => w.IsValid == false))
-                    return;
+                if (WordsAreValid(words) == false)
+                    return false;
 
                 Game.Current.TurnsWithoutPlacement = 0;
                 Game.Current.CurrentPlayer.TurnsPlayed++;
                 Game.Current.CurrentPlayer.Score += CalculatePoints(placedPieces);
                 HandController.ConfirmAll();
                 SidebarController.RenderWords();
+                HandController.SaveHand(Game.Current.CurrentPlayer);
             }
             else
             {
@@ -54,12 +66,11 @@ namespace kSlovnik.Game
                 if (Game.Current.TurnsWithoutPlacement == 2 * Game.Current.Players.Count)
                 {
                     EndGame(Constants.GameEndReason.NoMoreTurns);
-                    return;
+                    return false;
                 }
             }
 
-            HandController.SaveHand(Game.Current.CurrentPlayer);
-            StartNextTurn();
+            return true;
         }
 
         private static void StartNextTurn()
@@ -73,6 +84,10 @@ namespace kSlovnik.Game
             SidebarController.RenderTurnPlayerLabel();
             SidebarController.RenderScoreboard();
             HandController.LoadHand(Game.Current.CurrentPlayer);
+            if (Game.Current.CurrentPlayer.IsAI)
+            {
+                Game.Current.CurrentPlayer.AI.PlayTurn();
+            }
         }
 
         public static bool PiecePlacementIsValid(List<HandSlot> placedPieces = null)
@@ -118,31 +133,12 @@ namespace kSlovnik.Game
             return true;
         }
 
-        private static IEnumerable<Word> Validate(this IEnumerable<Word> words)
-        {
-            foreach (var word in words)
-            {
-                word.IsValid = true;
-                if (word.Text.Length < Constants.MinimumWordLength)
-                {
-                    word.IsValid = false;
-                    continue;
-                }
-                if (WordController.WordExists(word.Text) == false)
-                {
-                    word.IsValid = false;
-                    continue;
-                }
-            }
-            return words;
-        }
-
         public static int CalculatePoints(List<HandSlot> placedPieces = null)
         {
             placedPieces = placedPieces ?? HandController.HandSlots.Where(s => s.IsPlaced).ToList();
 
             var bonusPoints = 0;
-            if(placedPieces.Count == HandController.HandSlots.Length)
+            if (placedPieces.Count == HandController.HandSlots.Length)
             {
                 bonusPoints += Constants.BonusPointsAllPiecesUsed;
             }
@@ -205,6 +201,33 @@ namespace kSlovnik.Game
             }
 
             return words.Where(w => w.Text.Length >= Constants.MinimumWordLength).Validate().ToList();
+        }
+
+        private static IEnumerable<Word> Validate(this IEnumerable<Word> words)
+        {
+            foreach (var word in words)
+            {
+                word.IsValid = true;
+                if (word.Text.Length < Constants.MinimumWordLength)
+                {
+                    word.IsValid = false;
+                    continue;
+                }
+                if (WordController.WordExists(word.Text) == false)
+                {
+                    word.IsValid = false;
+                    continue;
+                }
+            }
+            return words;
+        }
+
+        public static bool WordsAreValid(List<Word> words)
+        {
+            if (words == null || words.Count == 0 || words.Any(w => w.IsValid == false))
+                return false;
+
+            return true;
         }
 
         private static Word GetWordFromRow(int row, int startColumn)
@@ -335,15 +358,15 @@ namespace kSlovnik.Game
                     Board.Board.Slots[position.Row - 1, position.Column].IsFilled) return true;
 
                 if ((position.Row + 1).Between(0, Board.Board.Rows) &&
-                    position.Column.Between(0, Board.Board.Columns) && 
+                    position.Column.Between(0, Board.Board.Columns) &&
                     Board.Board.Slots[position.Row + 1, position.Column].IsFilled) return true;
 
                 if (position.Row.Between(0, Board.Board.Rows) &&
-                    (position.Column - 1).Between(0, Board.Board.Columns) && 
+                    (position.Column - 1).Between(0, Board.Board.Columns) &&
                     Board.Board.Slots[position.Row, position.Column - 1].IsFilled) return true;
 
                 if (position.Row.Between(0, Board.Board.Rows) &&
-                    (position.Column + 1).Between(0, Board.Board.Columns) && 
+                    (position.Column + 1).Between(0, Board.Board.Columns) &&
                     Board.Board.Slots[position.Row, position.Column + 1].IsFilled) return true;
             }
 

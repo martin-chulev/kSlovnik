@@ -122,7 +122,7 @@ namespace kSlovnik.Piece
                     {
                         if (WasOnBoard)
                         {
-                            boardSlot.PendingPiece.PlaceOnBoard(BoardController.GetSlotAtIndex(PreviousBoardIndex));
+                            boardSlot.PendingPiece.PlaceOnBoard(PreviousBoardIndex);
                         }
                         else
                         {

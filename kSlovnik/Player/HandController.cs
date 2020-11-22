@@ -88,11 +88,11 @@ namespace kSlovnik.Player
             return (index >= 0 && index < HandSlots.Length) ? HandSlots[index] : null;
         }
 
-        public static void ReturnAllToHand()
+        public static void ReturnAllToHand(bool changeVisualPosition = true)
         {
             foreach (var slot in HandSlots)
             {
-                slot.ReturnToHand();
+                slot.ReturnToHand(changeVisualPosition);
             }
         }
 

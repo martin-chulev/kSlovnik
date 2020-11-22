@@ -3,6 +3,7 @@ using kSlovnik.Game;
 using kSlovnik.Generic;
 using kSlovnik.Piece;
 using kSlovnik.Player;
+using kSlovnik.Resources;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -42,20 +43,96 @@ namespace kSlovnik.Sidebar
 
             int currentStartingY = Constants.Padding.Top;
 
-            #region Menu
+            #region Menu bar
+            #region Container
             Sidebar.MenuContainer = new ShadowedPanel
             {
                 Location = new Point(Constants.Padding.Left, currentStartingY),
                 Width = sidebarContentWidth,
                 Height = (int)(sidebarTotalContentHeight * 0.05),
-                BackColor = Constants.Colors.HandInnerColor,
+                BackColor = Color.Black,
             };
             Sidebar.MenuContainer.DropShadow();
             Sidebar.SidebarPanel.Controls.Add(Sidebar.MenuContainer);
-            // menupanel
+            Sidebar.MenuPanel = new Panel
+            {
+                Location = new Point(Constants.BorderThickness, Constants.BorderThickness),
+                Width = Sidebar.MenuContainer.Width - 2 * Constants.BorderThickness,
+                Height = Sidebar.MenuContainer.Height - 2 * Constants.BorderThickness,
+            };
+            Sidebar.MenuContainer.Controls.Add(Sidebar.MenuPanel);
+            Sidebar.Menu = new Menu
+            {
+                Padding = new Padding(0),
+                Dock = DockStyle.Fill,
+                BackColor = Constants.Colors.MenuBackColor
+            };
+            Sidebar.MenuPanel.Controls.Add(Sidebar.Menu);
+            #endregion
+            #region Items
+            #region File
+            var fileButton = new MenuItem("Файл", ImageController.LetterImagesActive['~'])
+            {
+                Width = Sidebar.Menu.Width / 3,
+                Height = Sidebar.Menu.Height
+            };
+            #region File dropdown items
+            fileButton.DropDown = new MenuDropDown();
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Отвори...", enabled: true));
+            var saveSubButton = new MenuDropDownItem("Запиши", enabled: true);
+            saveSubButton.Click += SaveSubButton_Click;
+            fileButton.DropDownItems.Add(saveSubButton);
+
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Запиши като...", withSeparator: true, enabled: true));
+
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Печат...", enabled: true));
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Печат Инициализация...", withSeparator: true, enabled: true));
+
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Последни Игри", withSeparator: true, enabled: true));
+
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Изход", enabled: true));
+            #endregion
+            Sidebar.Menu.Items.Add(fileButton);
+            #endregion
+            #region Game
+            var gameButton = new MenuItem("Игра", ImageController.LetterImagesActive['~'])
+            {
+                Width = Sidebar.Menu.Width / 3,
+                Height = Sidebar.Menu.Height
+            };
+            #region Game dropdown items
+            gameButton.DropDown = new MenuDropDown();
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Игра", enabled: true));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Мрежова Игра...", withSeparator: true, enabled: true));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Играчи...", enabled: true));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Постижения", withSeparator: true, enabled: true));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Речник", enabled: true));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Трудност", withSeparator: true, enabled: true));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Изглед", enabled: true));
+            var soundsSubButton = new MenuDropDownItem("Звуци", isToggled: Constants.UserSettings.SoundsOn, enabled: true);
+            soundsSubButton.Click += SoundsSubButton_Click;
+            gameButton.DropDownItems.Add(soundsSubButton);
+            #endregion
+            Sidebar.Menu.Items.Add(gameButton);
+            #endregion
+            #region Help
+            var helpButton = new MenuItem("Помощ", ImageController.LetterImagesActive['~'])
+            {
+                Width = Sidebar.Menu.Width / 3,
+                Height = Sidebar.Menu.Height
+            };
+            #region Help dropdown items
+            helpButton.DropDown = new MenuDropDown();
+            helpButton.DropDownItems.Add(new MenuDropDownItem("Индекс...", enabled: true));
+            helpButton.DropDownItems.Add(new MenuDropDownItem("Правила...", withSeparator: true, enabled: true));
+            helpButton.DropDownItems.Add(new MenuDropDownItem("Относно КръстоСловник...", enabled: true));
+            #endregion
+            Sidebar.Menu.Items.Add(helpButton);
+            #endregion
+            #endregion
+            #endregion
 
             currentStartingY += Sidebar.MenuContainer.Height + (int)(1.5 * Constants.SidebarSeparatorHeight);
-            #endregion
 
             #region Scoreboard
             Sidebar.ScoreboardContainer = new ShadowedPanel
@@ -94,9 +171,9 @@ namespace kSlovnik.Sidebar
             Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(null, null, 10, ContentAlignment.MiddleRight));
             Sidebar.ScoreboardGrid.Init();
             Sidebar.ScoreboardContainer.Controls.Add(Sidebar.ScoreboardGrid);
+            #endregion
 
             currentStartingY += Sidebar.ScoreboardContainer.Height + (Constants.SidebarSeparatorHeight / 2);
-            #endregion
 
             #region Turn player label
             // Center vertically while taking lack of shadow in consideration
@@ -113,9 +190,9 @@ namespace kSlovnik.Sidebar
             };
             Sidebar.TurnPlayerLabel.Height = Sidebar.TurnPlayerLabel.Font.Height;
             Sidebar.SidebarPanel.Controls.Add(Sidebar.TurnPlayerLabel);
+            #endregion
 
             currentStartingY += Sidebar.TurnPlayerLabel.Height + (Constants.SidebarSeparatorHeight * 2);
-            #endregion
 
             #region Hand
             Sidebar.HandPanelContainer = new Panel
@@ -144,9 +221,9 @@ namespace kSlovnik.Sidebar
             };
             Sidebar.HandPanelOuter.Controls.Add(Sidebar.HandPanelInner);
             Sidebar.HandLocation = Sidebar.HandPanelContainer.GetLocationOnForm().PlusX(Sidebar.HandPanelInner.Location.X);
+            #endregion
 
             currentStartingY += Sidebar.HandPanelContainer.Height;
-            #endregion
 
             #region Pieces in deck label
             Sidebar.PiecesInDeckLabel = new Label
@@ -161,9 +238,9 @@ namespace kSlovnik.Sidebar
             };
             Sidebar.PiecesInDeckLabel.Height = Sidebar.PiecesInDeckLabel.Font.Height;
             Sidebar.SidebarPanel.Controls.Add(Sidebar.PiecesInDeckLabel);
+            #endregion
 
             currentStartingY += Sidebar.PiecesInDeckLabel.Height + (Constants.SidebarSeparatorHeight * 2);
-            #endregion
 
             #region Buttons
             Sidebar.ButtonsContainer = new Panel
@@ -197,9 +274,9 @@ namespace kSlovnik.Sidebar
             Sidebar.ButtonReset.DropShadow();
             Sidebar.ButtonReset.Click += ButtonResetClick;
             Sidebar.ButtonsContainer.Controls.Add(Sidebar.ButtonReset);
+            #endregion
 
             currentStartingY += Sidebar.ButtonsContainer.Height + Constants.SidebarSeparatorHeight;
-            #endregion
 
             #region Turn points label
             // Center vertically while taking lack of shadow in consideration
@@ -217,9 +294,9 @@ namespace kSlovnik.Sidebar
             };
             Sidebar.TurnPointsLabel.Height = Sidebar.TurnPointsLabel.Font.Height;
             Sidebar.SidebarPanel.Controls.Add(Sidebar.TurnPointsLabel);
+            #endregion
 
             currentStartingY += Sidebar.TurnPointsLabel.Height + Constants.SidebarSeparatorHeight / 2;
-            #endregion
 
             #region Current words
             Sidebar.WordsContainer = new ShadowedPanel
@@ -255,6 +332,26 @@ namespace kSlovnik.Sidebar
             #endregion
         }
 
+        #region Menu button functions
+        private static void SaveSubButton_Click(object sender, EventArgs e)
+        {
+            if (Game.Game.Save("autosave"))
+                MessageBox.Show("Game saved");
+        }
+
+        private static void SoundsSubButton_Click(object sender, EventArgs e)
+        {
+            if(sender is MenuDropDownItem toggle)
+            {
+                var soundsOn = Constants.UserSettings.SoundsOn;
+
+                toggle.IsToggled = !soundsOn;
+                Constants.UserSettings.SoundsOn = !soundsOn;
+                Constants.UserSettings.Save();
+            }
+        }
+        #endregion
+
         public static void RenderSidebar()
         {
             RenderScoreboard();
@@ -280,9 +377,9 @@ namespace kSlovnik.Sidebar
                 Sidebar.PiecesInDeckLabel.Text = string.Format(Constants.Texts.PiecesInDeck, Deck.Pieces.Count);
         }
 
-        private static void ButtonConfirmClick(object sender, EventArgs e)
+        private static async void ButtonConfirmClick(object sender, EventArgs e)
         {
-            GameController.EndTurn();
+            await GameController.EndTurn();
         }
 
         private static void ButtonResetClick(object sender, EventArgs e)

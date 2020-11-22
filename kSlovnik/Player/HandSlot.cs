@@ -53,7 +53,15 @@ namespace kSlovnik.Player
             Visible = false;
         }
 
-        public void PlaceOnBoard(BoardSlot boardSlot)
+        public void PlaceOnBoard(int boardSlotRow, int boardSlotColumn, bool changeVisualPosition = true)
+        {
+            PlaceOnBoard((boardSlotRow * Board.Board.Columns) + boardSlotColumn, changeVisualPosition);
+        }
+        public void PlaceOnBoard(int boardSlotIndex, bool changeVisualPosition = true)
+        {
+            PlaceOnBoard(BoardController.GetSlotAtIndex(boardSlotIndex), changeVisualPosition);
+        }
+        public void PlaceOnBoard(BoardSlot boardSlot, bool changeVisualPosition = true)
         {
             if (boardSlot == null) ReturnToHand();
 
@@ -61,29 +69,30 @@ namespace kSlovnik.Player
             {
                 if (Prompt.ChooseLetter(out var newLetter))
                 {
-                    Letter = newLetter;
-                    Image = Resources.ImageController.LetterImagesActiveBlank[newLetter];
+                    //Letter = newLetter;
+                    //Image = Resources.ImageController.LetterImagesActiveBlank[newLetter];
+                    SetPiece(newLetter, false);
                 }
                 else
                 {
-                    ReturnToHand();
+                    ReturnToHand(changeVisualPosition);
                     return;
                 }
             }
 
             boardSlot.PendingPiece = this;
             this.CurrentBoardSlot = boardSlot;
-            this.Location = boardSlot.GetLocationOnForm();
+            if (changeVisualPosition) this.Location = boardSlot.GetLocationOnForm();
         }
 
-        public void ReturnToHand()
+        public void ReturnToHand(bool changeVisualPosition = true)
         {
             if (IsPlaced)
             {
                 CurrentBoardSlot.PendingPiece = null;
                 CurrentBoardSlot = null;
             }
-            ReturnToOriginalPosition();
+            if (changeVisualPosition) ReturnToOriginalPosition();
             IsInHand = true;
 
             if (Color == Constants.Colors.TileColors.Grey)

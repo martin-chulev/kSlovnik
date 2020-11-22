@@ -77,7 +77,11 @@ namespace kSlovnik
             BoardController.LoadBoard(contentContainer);
             SidebarController.LoadSidebar(contentContainer, positionX: boardWidth + Constants.SeparatorWidth, width: sidePanelWidth, height: sidePanelHeight);
             HandController.CreateHand(contentContainer);
-            GameController.NewGame();
+
+
+            if (Game.Game.Load("autosave") == false)
+                GameController.NewGame();
+
             SidebarController.RenderSidebar();
         }
     }

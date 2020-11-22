@@ -1,14 +1,45 @@
 ﻿using kSlovnik.Board;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Windows.Forms;
 
 namespace kSlovnik
 {
     public static class Constants
     {
+        public static class UserSettings
+        {
+            public static bool SoundsOn = true;
+            public static string LastAutosave = null;
+
+            public static void Save()
+            {
+                var userSettings = Util.GetFieldValues(typeof(UserSettings));
+                var settingsFilePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "settings.json");
+
+                if (File.Exists(settingsFilePath))
+                    File.Delete(settingsFilePath);
+
+                File.WriteAllText(settingsFilePath, JsonSerializer.Serialize(userSettings, options: new JsonSerializerOptions { WriteIndented = true })); ;
+            }
+
+            public static void Load()
+            {
+                var settingsFilePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "settings.json");
+
+                if (File.Exists(settingsFilePath))
+                {
+                    var userSettings = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(settingsFilePath));
+                    Util.SetFieldValues(typeof(UserSettings), userSettings);
+                }
+            }
+        }
+
         public static class Colors
         {
             public enum TileColors
@@ -27,12 +58,15 @@ namespace kSlovnik
             public static readonly Color BackgroundColor = Color.FromArgb(205, 255, 204);
             public static readonly Color SidebarColor = Color.FromArgb(154, 203, 156);
 
+            public static readonly Color MenuBackColor = Color.FromArgb(212, 208, 199);
+            public static readonly Color MenuHoverColor = Color.FromArgb(202, 198, 189);
+            public static readonly Color MenuSeparatorColor = Color.FromArgb(192, 188, 179);
             public static readonly Color GridBackColor = Color.FromArgb(222, 222, 222);
 
             public static readonly Color HandOuterColor = Color.FromArgb(61, 197, 65);
             public static readonly Color HandInnerColor = Color.FromArgb(0, 64, 4);
 
-            public static readonly Color ButtonColor = Color.FromArgb(211, 209, 197);
+            public static readonly Color ButtonColor = Color.FromArgb(212, 208, 199);
 
             public static readonly Color FontBlack = Color.FromArgb(0, 0, 0);
             public static readonly Color FontBlue = Color.FromArgb(0, 0, 190);
@@ -41,8 +75,13 @@ namespace kSlovnik
 
         public enum GameEndReason
         {
+            [Description("")]
             Forced,
+
+            [Description("Няма повече възможни ходове")]
             NoMoreTurns,
+
+            [Description("Пуловете свършиха")]
             NoMorePieces
         }
         
@@ -66,14 +105,13 @@ namespace kSlovnik
         }
 
         public static Padding Padding;// = new Padding(18);
+        public const int MenuButtonPadding = 8;
         public const int BorderThickness = 2;
         public const int PaddingDivider = 50;
         public const int SidebarSeparatorHeight = 10;
         public const int HandTileSeparatorWidth = 0;
         public const int SeparatorWidth = 24;
         public const int GridRowPadding = 10;
-
-        public const int TileBorderWidth = 1;
 
         public const int FPS = 60;
 

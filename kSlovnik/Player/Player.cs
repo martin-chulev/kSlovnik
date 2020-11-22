@@ -17,18 +17,20 @@ namespace kSlovnik.Player
 
         public int TurnsPlayed { get; set; }
 
-        public bool IsAI { get; set; }
+        public AI.AI AI { get; set; }
+
+        public bool IsAI { get => this.AI != null; }
 
         public bool IsInTurn { get => Game.Game.Current.CurrentPlayer == this; }
 
-        public Player(string name = null, Image avatar = null, bool isAI = false)
+        public Player(string name = null, Image avatar = null, AI.AI ai = null)
         {
             this.Name = name ?? "Играч " + (Game.Game.Current.Players.Count + 1);
             this.Avatar = avatar;
             this.Hand = new Hand();
             this.Score = 0;
             this.TurnsPlayed = 0;
-            this.IsAI = isAI;
+            this.AI = ai;
         }
     }
 }
