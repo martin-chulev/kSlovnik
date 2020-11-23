@@ -26,26 +26,13 @@ namespace kSlovnik.AI
 
         public async void PlayTurn()
         {
-            //MessageBox.Show("Computer turn");
             var availableWords = GetAvailableWords();
-
-            availableWords = Difficulty switch
-            {
-                Difficulty.Easy => availableWords.OrderBy(w => w.Text.Length).ToList(),
-                Difficulty.Medium => availableWords.Shuffle(),
-                Difficulty.Hard => availableWords.OrderByDescending(w => w.Text.Length).ToList(),
-                Difficulty.Best => throw new NotImplementedException(),
-                _ => throw new NotImplementedException(),
-            };
-
             FindPlayableWord(availableWords);
             await GameController.EndTurn();
         }
 
         private List<PotentialWord> GetAvailableWords()
         {
-            var sw = new Stopwatch();
-            sw.Start();
             var result = new List<PotentialWord>();
 
             // Get hand
@@ -53,9 +40,12 @@ namespace kSlovnik.AI
             var handLetters = hand.Where(s => s != '~').Select(l => l.ToString().ToUpperInvariant()[0]).ToList();
             var handGreyCount = hand.Count - handLetters.Count;
 
-            // if center piece not placed:
-            // find a word from hand only
-
+            // If center piece is not placed, find a word from hand only and place it in the center of the board
+            if (Board.Board.CenterSlot.IsFilled == false)
+            {
+                // TODO: Implement search in dictionary from hand only and return that list of words
+                return result;
+            }
 
             // Get board
             var boardRows = new List<string>();
@@ -164,15 +154,41 @@ namespace kSlovnik.AI
             string regexPattern = @"^(?!.*o.*o)(?!.*a.*a)(?!.*e.*e.*e)(?!.*s.*s)d[oaes]{2}r[oaes]{0,3}$";
             Regex regex = new Regex(regexPattern);*/
             //WordController.Words.Where(w => )
-            sw.Stop();
+            
             //MessageBox.Show($"Found {result.Count} words\nin {sw.Elapsed}");
             return result;
         }
 
         private bool FindPlayableWord(List<PotentialWord> availableWords)
         {
-            for (int i = 0; i < availableWords.Count; i++)
+            availableWords = Difficulty switch
             {
+                Difficulty.Easiest => availableWords.OrderBy(w => w.Text.Length).ToList(),
+                Difficulty.Easy => availableWords.OrderBy(w => w.Text.Length).ToList(),
+                Difficulty.Medium => availableWords.Shuffle(),
+                Difficulty.Hard => availableWords.OrderByDescending(w => w.Text.Length).ToList(),
+                Difficulty.Hardest => availableWords.OrderByDescending(w => w.Text.Length).ToList(),
+                Difficulty.Best => availableWords.OrderByDescending(w => w.Text.Length).ToList(),
+                Difficulty.Bestest => throw new NotImplementedException(),
+                _ => throw new NotImplementedException(),
+            };
+
+            var rand = new Random();
+
+            while (availableWords.Count > 0)
+            {
+                int i = Difficulty switch
+                {
+                    Difficulty.Easiest => rand.Next(0, Math.Max(availableWords.Count, 4)), // Get one of the top 4 shortest words
+                    Difficulty.Easy => rand.Next(0, Math.Max(availableWords.Count, availableWords.Count / 4)), // Get one of the top 25% shortest words
+                    Difficulty.Medium => 0,
+                    Difficulty.Hard => rand.Next(0, Math.Max(1, availableWords.Count / 4)), // Get one of the top 25% longest words
+                    Difficulty.Hardest => rand.Next(0, Math.Max(availableWords.Count, 4)), // Get one of the top 4 longest words
+                    Difficulty.Best => 0,
+                    Difficulty.Bestest => 0,
+                    _ => throw new NotImplementedException(),
+                };
+
                 PlacePieces(availableWords[i], false);
 
                 if (GameController.WordsAreValid(GameController.GetNewWords()) == true)
@@ -184,6 +200,7 @@ namespace kSlovnik.AI
                 else
                 {
                     HandController.ReturnAllToHand(changeVisualPosition: false);
+                    availableWords.RemoveAt(i);
                 }
             }
 
@@ -264,16 +281,25 @@ namespace kSlovnik.AI
 
     public enum Difficulty
     {
+        [Description("Избира най-късите думи")]
+        Easiest,
+
         [Description("Избира къси думи")]
         Easy,
 
-        [Description("Избира среднодълги думи")]
+        [Description("Избира случайни думи")]
         Medium,
 
         [Description("Избира дълги думи")]
         Hard,
 
-        [Description("Избира думите, които носят най-много точки")]
-        Best
+        [Description("Избира една от най-дългите думи")]
+        Hardest,
+
+        [Description("Винаги избира най-дългата дума")]
+        Best,
+
+        [Description("Винаги избира думата, която носи най-много точки")]
+        Bestest
     }
 }

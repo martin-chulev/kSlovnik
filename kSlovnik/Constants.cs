@@ -66,7 +66,10 @@ namespace kSlovnik
             public static readonly Color HandOuterColor = Color.FromArgb(61, 197, 65);
             public static readonly Color HandInnerColor = Color.FromArgb(0, 64, 4);
 
-            public static readonly Color ButtonColor = Color.FromArgb(212, 208, 199);
+            public static readonly Color ButtonColorBackActive = Color.FromArgb(212, 208, 199);
+            public static readonly Color ButtonColorBackInactive = Color.FromArgb(192, 188, 179);
+            public static readonly Color ButtonColorForeActive = Color.Black;
+            public static readonly Color ButtonColorForeInactive = Color.LightGray;
 
             public static readonly Color FontBlack = Color.FromArgb(0, 0, 0);
             public static readonly Color FontBlue = Color.FromArgb(0, 0, 190);
@@ -87,6 +90,7 @@ namespace kSlovnik
         
         public const int MinimumWordLength = 2;
         public const int BonusPointsAllPiecesUsed = 50;
+        public const int ScreenshotMinimumPoints = 20;
 
         public static class Fonts
         {

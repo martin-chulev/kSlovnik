@@ -32,6 +32,8 @@ namespace kSlovnik.Piece
 
         public static void OnMouseDown(object sender, MouseEventArgs e)
         {
+            if (Game.Game.Current.CurrentPlayer.IsAI) return;
+
             var control = sender as HandSlot;
             if (control == null) return;
 
@@ -73,6 +75,8 @@ namespace kSlovnik.Piece
 
         public static void OnMouseMove(object sender, MouseEventArgs e)
         {
+            if (Game.Game.Current.CurrentPlayer.IsAI) return;
+
             var now = DateTime.Now;
 
             if ((now - LastMoveTime).TotalMilliseconds >= MoveIntervalMilliseconds)
@@ -89,6 +93,8 @@ namespace kSlovnik.Piece
 
         public static void OnMouseUp(object sender, MouseEventArgs e)
         {
+            if (Game.Game.Current.CurrentPlayer.IsAI) return;
+
             var control = sender as HandSlot;
             if (control == null) return;
             if (e.Button != MouseButtons.Left) return;

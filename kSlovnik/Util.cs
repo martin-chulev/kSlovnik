@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -137,6 +139,34 @@ namespace kSlovnik
                 list[n] = value;
             }
             return list;
+        }
+
+        public static void CaptureScreenshot(Form form, int gameId, int turnNumber)
+        {
+            //Creating a new Bitmap object
+            Bitmap captureBitmap = new Bitmap(form.Width - 16, form.Height - 8, PixelFormat.Format32bppArgb);
+
+            //Creating a Rectangle object which will  
+            //capture our Current Screen
+            Rectangle captureRectangle = Screen.FromControl(form).Bounds;
+
+            //Creating a New Graphics Object
+            Graphics captureGraphics = Graphics.FromImage(captureBitmap);
+
+            //Copying Image from The Screen
+            captureGraphics.CopyFromScreen(form.Location.X + 8,
+                                           form.Location.Y,
+                                           0, 0,
+                                           new Size(form.Size.Width, form.Size.Height));
+
+            var screenshotsFolderPath = @"Screenshots";
+            var timeStamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            var fileName = $"{timeStamp}_{gameId}_{turnNumber}.png";
+
+            if (!Directory.Exists(screenshotsFolderPath))
+                Directory.CreateDirectory(screenshotsFolderPath);
+
+            captureBitmap.Save(Path.Combine(screenshotsFolderPath, fileName), ImageFormat.Png);
         }
     }
 }

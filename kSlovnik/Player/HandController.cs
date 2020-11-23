@@ -191,10 +191,13 @@ namespace kSlovnik.Player
         {
             foreach (var slot in HandSlots)
             {
-                if (slot.IsPlaced)
+                slot.Invoke((MethodInvoker)delegate
                 {
-                    slot.CurrentBoardSlot.ConfirmPiece();
-                }
+                    if (slot.IsPlaced)
+                    {
+                        slot.CurrentBoardSlot.ConfirmPiece();
+                    }
+                });
             }
         }
     }

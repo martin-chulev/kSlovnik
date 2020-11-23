@@ -255,7 +255,8 @@ namespace kSlovnik.Sidebar
                 Location = new Point(0, 0),
                 Width = (int)(Sidebar.ButtonsContainer.Width * 0.35),
                 Height = Sidebar.ButtonsContainer.Height - Constants.Shadows.DropShadowWidth,
-                BackColor = Constants.Colors.ButtonColor,
+                BackColor = Constants.Colors.ButtonColorBackActive,
+                ForeColor = Constants.Colors.ButtonColorForeActive,
                 FlatStyle = FlatStyle.Flat,
                 Text = "Играй"
             };
@@ -267,7 +268,8 @@ namespace kSlovnik.Sidebar
                 Location = new Point((int)(Sidebar.ButtonsContainer.Width * 0.45) - Constants.Shadows.DropShadowWidth, 0),
                 Width = (int)(Sidebar.ButtonsContainer.Width * 0.55),
                 Height = Sidebar.ButtonsContainer.Height - Constants.Shadows.DropShadowWidth,
-                BackColor = Constants.Colors.ButtonColor,
+                BackColor = Constants.Colors.ButtonColorBackActive,
+                ForeColor = Constants.Colors.ButtonColorForeActive,
                 FlatStyle = FlatStyle.Flat,
                 Text = "Прибери пуловете"
             };
@@ -388,10 +390,33 @@ namespace kSlovnik.Sidebar
             SidebarController.RenderWords();
         }
 
+        public static void ToggleUserButtons(bool enabled)
+        {
+            Sidebar.ButtonConfirm.Invoke((MethodInvoker)delegate
+            {
+                Sidebar.ButtonConfirm.Enabled = enabled;
+                Sidebar.ButtonConfirm.BackColor = enabled ? Constants.Colors.ButtonColorBackActive : Constants.Colors.ButtonColorBackInactive;
+                Sidebar.ButtonConfirm.ForeColor = enabled ? Constants.Colors.ButtonColorForeActive : Constants.Colors.ButtonColorForeInactive;
+                //Sidebar.ButtonConfirm.Visible = enabled;
+                //Sidebar.ButtonConfirm.Parent.Visible = enabled;
+            });
+            Sidebar.ButtonReset.Invoke((MethodInvoker)delegate
+            {
+                Sidebar.ButtonReset.Enabled = enabled;
+                Sidebar.ButtonReset.BackColor = enabled ? Constants.Colors.ButtonColorBackActive : Constants.Colors.ButtonColorBackInactive;
+                Sidebar.ButtonReset.ForeColor = enabled ? Constants.Colors.ButtonColorForeActive : Constants.Colors.ButtonColorForeInactive;
+                //Sidebar.ButtonReset.Visible = enabled;
+                //Sidebar.ButtonReset.Parent.Visible = enabled;
+            });
+        }
+
         public static void RenderTurnPointsLabel(int points)
         {
-            if (Sidebar.TurnPointsLabel != null)
-                Sidebar.TurnPointsLabel.Text = string.Format(Constants.Texts.TurnPoints, points);
+            Sidebar.TurnPointsLabel.Invoke((MethodInvoker)delegate
+            {
+                if (Sidebar.TurnPointsLabel != null)
+                    Sidebar.TurnPointsLabel.Text = string.Format(Constants.Texts.TurnPoints, points);
+            });
         }
 
         public static void RenderWords()

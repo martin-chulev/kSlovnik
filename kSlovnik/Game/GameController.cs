@@ -18,8 +18,9 @@ namespace kSlovnik.Game
         public static void NewGame()
         {
             Game.Current = new Game();
-
-            Game.Current.Players.Add(new Player.Player("Easy", ImageController.LetterImagesActive['а'], new AI.AI(AI.Difficulty.Easy)));
+            
+            // TODO: Get players from settings
+            Game.Current.Players.Add(new Player.Player("Easy", ImageController.LetterImagesActive['а'], null));
             Game.Current.Players.Add(new Player.Player("Medium", ImageController.LetterImagesActive['б'], new AI.AI(AI.Difficulty.Medium)));
             Game.Current.Players.Add(new Player.Player("Hard", ImageController.LetterImagesActive['в'], new AI.AI(AI.Difficulty.Hard)));
             Game.Current.CurrentPlayerIndex = 0;
@@ -54,9 +55,19 @@ namespace kSlovnik.Game
 
                 Game.Current.TurnsWithoutPlacement = 0;
                 Game.Current.CurrentPlayer.TurnsPlayed++;
-                Game.Current.CurrentPlayer.Score += CalculatePoints(placedPieces);
+
+                var turnPoints = CalculatePoints(placedPieces);
+                Game.Current.CurrentPlayer.Score += turnPoints;
+
+                if (Game.Current.CurrentPlayer.IsAI == false && turnPoints >= Constants.ScreenshotMinimumPoints)
+                {
+                    // TODO: Save points in a highscore board as well
+                    Util.CaptureScreenshot(Program.MainView, 0, Game.Current.Players.Sum(p => p.TurnsPlayed));
+                }
+
                 HandController.ConfirmAll();
                 SidebarController.RenderWords();
+
                 HandController.SaveHand(Game.Current.CurrentPlayer);
             }
             else
@@ -80,7 +91,7 @@ namespace kSlovnik.Game
             {
                 Game.Current.CurrentPlayerIndex = 0;
             }
-
+            SidebarController.ToggleUserButtons(Game.Current.CurrentPlayer.IsAI == false);
             SidebarController.RenderTurnPlayerLabel();
             SidebarController.RenderScoreboard();
             HandController.LoadHand(Game.Current.CurrentPlayer);
