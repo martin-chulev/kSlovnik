@@ -36,21 +36,49 @@ namespace kSlovnik.Player
             }
             else
             {
-                Letter = piece.Value;
-                Color = setColor ? Constants.DeckInfo.PieceColors[piece.Value] : Color;
-                Image = Color == Constants.Colors.TileColors.Grey ?
-                    Resources.ImageController.LetterImagesActiveBlank[piece.Value] :
-                    Resources.ImageController.LetterImagesActive[piece.Value];
-                Visible = true;
+                try
+                {
+                    Letter = piece.Value;
+                    Color = setColor ? Constants.DeckInfo.PieceColors[piece.Value] : Color;
+                    Image = Color == Constants.Colors.TileColors.Grey ?
+                        Resources.ImageController.LetterImagesActiveBlank[piece.Value] :
+                        Resources.ImageController.LetterImagesActive[piece.Value];
+                    Visible = true;
+                }
+                catch
+                {
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        Letter = piece.Value;
+                        Color = setColor ? Constants.DeckInfo.PieceColors[piece.Value] : Color;
+                        Image = Color == Constants.Colors.TileColors.Grey ?
+                            Resources.ImageController.LetterImagesActiveBlank[piece.Value] :
+                            Resources.ImageController.LetterImagesActive[piece.Value];
+                        Visible = true;
+                    });
+                }
             }
         }
 
         public void Clear()
         {
-            Letter = '\0';
-            Color = Constants.Colors.TileColors.None;
-            Image = null;
-            Visible = false;
+            try
+            {
+                Letter = '\0';
+                Color = Constants.Colors.TileColors.None;
+                Image = null;
+                Visible = false;
+            }
+            catch
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    Letter = '\0';
+                    Color = Constants.Colors.TileColors.None;
+                    Image = null;
+                    Visible = false;
+                });
+            }
         }
 
         public void PlaceOnBoard(int boardSlotRow, int boardSlotColumn, bool changeVisualPosition = true)
@@ -80,32 +108,77 @@ namespace kSlovnik.Player
                 }
             }
 
-            boardSlot.PendingPiece = this;
-            this.CurrentBoardSlot = boardSlot;
-            if (changeVisualPosition) this.Location = boardSlot.GetLocationOnForm();
+            try
+            {
+                boardSlot.PendingPiece = this;
+                this.CurrentBoardSlot = boardSlot;
+                if (changeVisualPosition) this.Location = boardSlot.GetLocationOnForm();
+            }
+            catch
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    boardSlot.PendingPiece = this;
+                    this.CurrentBoardSlot = boardSlot;
+                    if (changeVisualPosition) this.Location = boardSlot.GetLocationOnForm();
+                });
+            }
         }
 
         public void ReturnToHand(bool changeVisualPosition = true)
         {
-            if (IsPlaced)
+            try
             {
-                CurrentBoardSlot.PendingPiece = null;
-                CurrentBoardSlot = null;
-            }
-            if (changeVisualPosition) ReturnToOriginalPosition();
-            IsInHand = true;
+                if (IsPlaced)
+                {
+                    CurrentBoardSlot.PendingPiece = null;
+                    CurrentBoardSlot = null;
+                }
+                if (changeVisualPosition) ReturnToOriginalPosition();
+                IsInHand = true;
 
-            if (Color == Constants.Colors.TileColors.Grey)
+                if (Color == Constants.Colors.TileColors.Grey)
+                {
+                    SetPiece('~', setColor: false);
+                }
+            }
+            catch
             {
-                SetPiece('~', setColor: false);
+                this.Invoke((MethodInvoker)delegate
+                {
+                    if (IsPlaced)
+                    {
+                        CurrentBoardSlot.PendingPiece = null;
+                        CurrentBoardSlot = null;
+                    }
+                    if (changeVisualPosition) ReturnToOriginalPosition();
+                    IsInHand = true;
+
+                    if (Color == Constants.Colors.TileColors.Grey)
+                    {
+                        SetPiece('~', setColor: false);
+                    }
+                });
             }
         }
 
         public void ReturnToOriginalPosition()
         {
-            var originalPosition = this.GetLocationFromTag();
-            if (originalPosition != Point.Empty)
-                this.Location = originalPosition;
+            try
+            {
+                var originalPosition = this.GetLocationFromTag();
+                if (originalPosition != Point.Empty)
+                    this.Location = originalPosition;
+            }
+            catch
+            {
+                this.Invoke((MethodInvoker)delegate
+                {
+                    var originalPosition = this.GetLocationFromTag();
+                    if (originalPosition != Point.Empty)
+                        this.Location = originalPosition;
+                });
+            }
         }
     }
 }

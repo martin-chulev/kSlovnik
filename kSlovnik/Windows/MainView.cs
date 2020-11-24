@@ -72,17 +72,23 @@ namespace kSlovnik
             this.Location = new Point(screenArea.Width / 2 - this.Width / 2, screenArea.Height / 2 - this.Height / 2);
 
             ImageController.LoadImages();
+            UserSettings.Load();
             SoundController.LoadSounds();
             WordController.LoadWords();
             BoardController.LoadBoard(contentContainer);
             SidebarController.LoadSidebar(contentContainer, positionX: boardWidth + Constants.SeparatorWidth, width: sidePanelWidth, height: sidePanelHeight);
             HandController.CreateHand(contentContainer);
-
-
-            if (Game.Game.Load("autosave") == false)
+            
+            if (Game.Game.Load(null))
+            {
+                SidebarController.RenderSidebar();
+                Task.Run(() => GameController.ContinueFromLoadedTurn());
+            }
+            else
+            {
                 GameController.NewGame();
-
-            SidebarController.RenderSidebar();
+                SidebarController.RenderSidebar();
+            }
         }
     }
 }

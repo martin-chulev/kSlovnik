@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace kSlovnik.Sidebar
@@ -78,7 +79,10 @@ namespace kSlovnik.Sidebar
             };
             #region File dropdown items
             fileButton.DropDown = new MenuDropDown();
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Отвори...", enabled: true));
+            var loadSubButton = new MenuDropDownItem("Отвори...", enabled: true);
+            loadSubButton.Click += LoadSubButton_Click;
+            fileButton.DropDownItems.Add(loadSubButton);
+
             var saveSubButton = new MenuDropDownItem("Запиши", enabled: true);
             saveSubButton.Click += SaveSubButton_Click;
             fileButton.DropDownItems.Add(saveSubButton);
@@ -102,14 +106,16 @@ namespace kSlovnik.Sidebar
             };
             #region Game dropdown items
             gameButton.DropDown = new MenuDropDown();
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Игра", enabled: true));
+            var newGameSubButton = new MenuDropDownItem("Нова Игра", enabled: true);
+            newGameSubButton.Click += NewGameSubButton_Click;
+            gameButton.DropDownItems.Add(newGameSubButton);
             gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Мрежова Игра...", withSeparator: true, enabled: true));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Играчи...", enabled: true));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Постижения", withSeparator: true, enabled: true));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Речник", enabled: true));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Трудност", withSeparator: true, enabled: true));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Изглед", enabled: true));
-            var soundsSubButton = new MenuDropDownItem("Звуци", isToggled: Constants.UserSettings.SoundsOn, enabled: true);
+            var soundsSubButton = new MenuDropDownItem("Звуци", isToggled: UserSettings.SoundsOn, enabled: true);
             soundsSubButton.Click += SoundsSubButton_Click;
             gameButton.DropDownItems.Add(soundsSubButton);
             #endregion
@@ -335,21 +341,41 @@ namespace kSlovnik.Sidebar
         }
 
         #region Menu button functions
+        private static void NewGameSubButton_Click(object sender, EventArgs e)
+        {
+            Game.GameController.NewGame();
+            SidebarController.RenderSidebar();
+            Task.Run(() => GameController.ContinueFromLoadedTurn());
+        }
+
+        private static void LoadSubButton_Click(object sender, EventArgs e)
+        {
+            var saveFilePath = LoadSavedGameDialog.SelectFile();
+            if (string.IsNullOrEmpty(saveFilePath) == false)
+            {
+                if(Game.Game.Load(saveFilePath, true))
+                {
+                    SidebarController.RenderSidebar();
+                    Task.Run(() => GameController.ContinueFromLoadedTurn());
+                }
+            }
+        }
+
         private static void SaveSubButton_Click(object sender, EventArgs e)
         {
-            if (Game.Game.Save("autosave"))
-                MessageBox.Show("Game saved");
+            if (Game.Game.Save(autosave: false))
+                MessageBox.Show("Играта е запазена");
         }
 
         private static void SoundsSubButton_Click(object sender, EventArgs e)
         {
             if(sender is MenuDropDownItem toggle)
             {
-                var soundsOn = Constants.UserSettings.SoundsOn;
+                var soundsOn = UserSettings.SoundsOn;
 
                 toggle.IsToggled = !soundsOn;
-                Constants.UserSettings.SoundsOn = !soundsOn;
-                Constants.UserSettings.Save();
+                UserSettings.SoundsOn = !soundsOn;
+                UserSettings.Save();
             }
         }
         #endregion
@@ -364,19 +390,35 @@ namespace kSlovnik.Sidebar
 
         public static void RenderScoreboard()
         {
-            Sidebar.ScoreboardGrid.DataSource = Game.Game.Current.Players;
+            if (Sidebar.ScoreboardGrid != null)
+            {
+                Sidebar.ScoreboardGrid.Invoke((MethodInvoker)delegate
+                {
+                    Sidebar.ScoreboardGrid.DataSource = Game.Game.Current.Players;
+                });
+            }
         }
 
         public static void RenderTurnPlayerLabel()
         {
             if (Sidebar.TurnPlayerLabel != null)
-                Sidebar.TurnPlayerLabel.Text = string.Format(Constants.Texts.TurnPlayer, Game.Game.Current.Players[Game.Game.Current.CurrentPlayerIndex].Name);
+            {
+                Sidebar.TurnPlayerLabel.Invoke((MethodInvoker)delegate
+                {
+                    Sidebar.TurnPlayerLabel.Text = string.Format(Constants.Texts.TurnPlayer, Game.Game.Current.Players[Game.Game.Current.CurrentPlayerIndex].Name);
+                });
+            }
         }
 
         public static void RenderPiecesInDeckLabel()
         {
             if (Sidebar.PiecesInDeckLabel != null)
-                Sidebar.PiecesInDeckLabel.Text = string.Format(Constants.Texts.PiecesInDeck, Deck.Pieces.Count);
+            {
+                Sidebar.PiecesInDeckLabel.Invoke((MethodInvoker)delegate
+                {
+                    Sidebar.PiecesInDeckLabel.Text = string.Format(Constants.Texts.PiecesInDeck, Deck.Pieces.Count);
+                });
+            }
         }
 
         private static async void ButtonConfirmClick(object sender, EventArgs e)
@@ -407,6 +449,10 @@ namespace kSlovnik.Sidebar
                 Sidebar.ButtonReset.ForeColor = enabled ? Constants.Colors.ButtonColorForeActive : Constants.Colors.ButtonColorForeInactive;
                 //Sidebar.ButtonReset.Visible = enabled;
                 //Sidebar.ButtonReset.Parent.Visible = enabled;
+            });
+            Sidebar.Menu.Invoke((MethodInvoker)delegate
+            {
+                Sidebar.Menu.Enabled = enabled;
             });
         }
 

@@ -3,6 +3,7 @@ using kSlovnik.Player;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Windows.Forms;
 
 namespace kSlovnik.Board
@@ -35,6 +36,7 @@ namespace kSlovnik.Board
             }
         }
 
+        [JsonIgnore]
         public HandSlot PendingPiece { get; set; }
 
         public bool IsPending { get => PendingPiece != null; }

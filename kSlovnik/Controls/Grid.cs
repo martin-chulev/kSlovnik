@@ -258,22 +258,48 @@ namespace kSlovnik.Controls
                 }
                 set
                 {
-                    if (value is Image image)
+                    try
                     {
-                        this.Text = string.Empty;
-                        this.Image = image.ToSize((int)(this.Height * 0.7));
-                        this.value = this.Image;
-                    }
-                    else
-                    {
-                        this.Text = value switch
+                        if (value is Image image)
                         {
-                            true => "✓",
-                            false => value is Word ? "✗" : null,
-                            _ => value?.ToString()
-                        };
-                        this.Image = null;
-                        this.value = this.Text;
+                            this.Text = string.Empty;
+                            this.Image = image.ToSize((int)(this.Height * 0.7));
+                            this.value = this.Image;
+                        }
+                        else
+                        {
+                            this.Text = value switch
+                            {
+                                true => "✓",
+                                false => value is Word ? "✗" : null,
+                                _ => value?.ToString()
+                            };
+                            this.Image = null;
+                            this.value = this.Text;
+                        }
+                    }
+                    catch
+                    {
+                        this.Invoke((MethodInvoker)delegate
+                        {
+                            if (value is Image image)
+                            {
+                                this.Text = string.Empty;
+                                this.Image = image.ToSize((int)(this.Height * 0.7));
+                                this.value = this.Image;
+                            }
+                            else
+                            {
+                                this.Text = value switch
+                                {
+                                    true => "✓",
+                                    false => value is Word ? "✗" : null,
+                                    _ => value?.ToString()
+                                };
+                                this.Image = null;
+                                this.value = this.Text;
+                            }
+                        });
                     }
                 }
             }

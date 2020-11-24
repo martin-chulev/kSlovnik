@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace kSlovnik.Player
 {
@@ -9,6 +10,7 @@ namespace kSlovnik.Player
     {
         public const int PieceLimit = 7;
 
+        [JsonInclude]
         public char?[] Pieces = new char?[PieceLimit];
 
         public int GetFirstFreeSlotIndex()

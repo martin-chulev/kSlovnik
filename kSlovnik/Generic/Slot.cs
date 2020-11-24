@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Windows.Forms;
 
 namespace kSlovnik.Generic

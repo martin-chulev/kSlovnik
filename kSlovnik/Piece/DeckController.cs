@@ -9,6 +9,7 @@ namespace kSlovnik.Piece
     {
         public static void LoadDeck()
         {
+            Deck.Pieces.Clear();
             Constants.DeckInfo.Pieces.Shuffle().ForEach(p => Deck.Pieces.Enqueue(p));
         }
 

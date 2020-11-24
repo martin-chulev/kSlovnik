@@ -27,7 +27,7 @@ namespace kSlovnik.Resources
 
             public void Play()
             {
-                if (Constants.UserSettings.SoundsOn)
+                if (UserSettings.SoundsOn)
                 {
                     try
                     {

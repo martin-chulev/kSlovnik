@@ -21,7 +21,6 @@ namespace kSlovnik
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            Constants.UserSettings.Load();
             MainView = new MainView();
             Application.Run(MainView);
         }

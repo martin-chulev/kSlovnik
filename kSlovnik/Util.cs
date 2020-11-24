@@ -119,9 +119,26 @@ namespace kSlovnik
                 if (newValues.ContainsKey(fields[i].Name))
                 {
                     if (fields[i].FieldType == typeof(bool))
+                    {
                         fields[i].SetValue(null, ((JsonElement)newValues[fields[i].Name]).GetBoolean());
+                    }
                     else
-                        fields[i].SetValue(null, Convert.ChangeType(newValues[fields[i].Name], fields[i].FieldType));
+                    {
+                        try
+                        {
+                            fields[i].SetValue(null, Convert.ChangeType(newValues[fields[i].Name], fields[i].FieldType));
+                        }
+                        catch
+                        {
+                            var listResult = new List<Player.Player>();
+                            var arr = ((JsonElement)newValues[fields[i].Name]).EnumerateArray();
+                            foreach (var item in arr)
+                            {
+                                listResult.Add(JsonSerializer.Deserialize<Player.Player>(item.GetRawText()));
+                            }
+                            fields[i].SetValue(null, listResult);
+                        }
+                    }
                 }
             }
         }
@@ -167,6 +184,51 @@ namespace kSlovnik
                 Directory.CreateDirectory(screenshotsFolderPath);
 
             captureBitmap.Save(Path.Combine(screenshotsFolderPath, fileName), ImageFormat.Png);
+        }
+
+        public static void CaptureScreenshot(Form form, string filePath)
+        {
+            //Creating a new Bitmap object
+            Bitmap captureBitmap = new Bitmap(form.Width - 16, form.Height - 8, PixelFormat.Format32bppArgb);
+
+            //Creating a Rectangle object which will  
+            //capture our Current Screen
+            Rectangle captureRectangle = Screen.FromControl(form).Bounds;
+
+            //Creating a New Graphics Object
+            Graphics captureGraphics = Graphics.FromImage(captureBitmap);
+
+            //Copying Image from The Screen
+            captureGraphics.CopyFromScreen(form.Location.X + 8,
+                                           form.Location.Y,
+                                           0, 0,
+                                           new Size(form.Size.Width, form.Size.Height));
+
+            captureBitmap.Save(filePath, ImageFormat.Png);
+        }
+
+        public static byte[] ToByteArray(this Image imageIn)
+        {
+            using (var ms = new MemoryStream())
+            {
+                imageIn.Save(ms, ImageFormat.Png);
+                return ms.ToArray();
+            }
+        }
+
+        public static string ToBase64String(this Image image)
+        {
+            return Convert.ToBase64String(image.ToByteArray());
+        }
+
+        public static string ToBase64String(this byte[] imageByteArray)
+        {
+            return Convert.ToBase64String(imageByteArray);
+        }
+
+        public static Image ImageFromBase64String(string base64String)
+        {
+            return Image.FromStream(new MemoryStream(Convert.FromBase64String(base64String)));
         }
     }
 }

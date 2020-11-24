@@ -12,33 +12,7 @@ namespace kSlovnik
 {
     public static class Constants
     {
-        public static class UserSettings
-        {
-            public static bool SoundsOn = true;
-            public static string LastAutosave = null;
-
-            public static void Save()
-            {
-                var userSettings = Util.GetFieldValues(typeof(UserSettings));
-                var settingsFilePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "settings.json");
-
-                if (File.Exists(settingsFilePath))
-                    File.Delete(settingsFilePath);
-
-                File.WriteAllText(settingsFilePath, JsonSerializer.Serialize(userSettings, options: new JsonSerializerOptions { WriteIndented = true })); ;
-            }
-
-            public static void Load()
-            {
-                var settingsFilePath = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "settings.json");
-
-                if (File.Exists(settingsFilePath))
-                {
-                    var userSettings = JsonSerializer.Deserialize<Dictionary<string, object>>(File.ReadAllText(settingsFilePath));
-                    Util.SetFieldValues(typeof(UserSettings), userSettings);
-                }
-            }
-        }
+        public static readonly string SavesFolder = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "Saves");
 
         public static class Colors
         {
@@ -81,10 +55,10 @@ namespace kSlovnik
             [Description("")]
             Forced,
 
-            [Description("Няма повече възможни ходове")]
+            [Description("Няма повече възможни ходове.")]
             NoMoreTurns,
 
-            [Description("Пуловете свършиха")]
+            [Description("Пуловете свършиха.")]
             NoMorePieces
         }
         

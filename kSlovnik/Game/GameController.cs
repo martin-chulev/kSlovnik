@@ -17,17 +17,23 @@ namespace kSlovnik.Game
     {
         public static void NewGame()
         {
-            Game.Current = new Game();
-            
-            // TODO: Get players from settings
-            Game.Current.Players.Add(new Player.Player("Easy", ImageController.LetterImagesActive['а'], null));
-            Game.Current.Players.Add(new Player.Player("Medium", ImageController.LetterImagesActive['б'], new AI.AI(AI.Difficulty.Medium)));
-            Game.Current.Players.Add(new Player.Player("Hard", ImageController.LetterImagesActive['в'], new AI.AI(AI.Difficulty.Hard)));
+            Game.Current = new Game() { Id = DateTime.Now.ToString("yyyyMMddHHmmss") };
+
+            foreach (var player in UserSettings.Players)
+            {
+                Game.Current.Players.Add(new Player.Player(player.Name, player.Avatar, player.AI));
+            }
             Game.Current.CurrentPlayerIndex = 0;
             SidebarController.RenderTurnPlayerLabel();
 
             DeckController.LoadDeck();
             HandController.LoadHand(Game.Current.CurrentPlayer);
+            HandController.SaveHand(Game.Current.CurrentPlayer);
+        }
+
+        public static async Task ContinueFromLoadedTurn()
+        {
+            await Task.Run(() => StartNextTurn(false));
         }
 
         public static async Task EndTurn()
@@ -84,12 +90,16 @@ namespace kSlovnik.Game
             return true;
         }
 
-        private static void StartNextTurn()
+        private static void StartNextTurn(bool nextPlayer = true)
         {
-            Game.Current.CurrentPlayerIndex++;
-            if (Game.Current.CurrentPlayerIndex >= Game.Current.Players.Count)
+            if (nextPlayer)
             {
-                Game.Current.CurrentPlayerIndex = 0;
+                Game.Current.CurrentPlayerIndex++;
+                if (Game.Current.CurrentPlayerIndex >= Game.Current.Players.Count)
+                {
+                    Game.Current.CurrentPlayerIndex = 0;
+                }
+                Game.Save(autosave: true);
             }
             SidebarController.ToggleUserButtons(Game.Current.CurrentPlayer.IsAI == false);
             SidebarController.RenderTurnPlayerLabel();
@@ -103,7 +113,7 @@ namespace kSlovnik.Game
 
         public static bool PiecePlacementIsValid(List<HandSlot> placedPieces = null)
         {
-            placedPieces = placedPieces ?? HandController.HandSlots.Where(s => s.IsPlaced).ToList();
+            placedPieces ??= HandController.HandSlots.Where(s => s.IsPlaced).ToList();
 
             // If no pieces were placed - nothing to check
             if (placedPieces.Any() == false) return true;
@@ -146,7 +156,7 @@ namespace kSlovnik.Game
 
         public static int CalculatePoints(List<HandSlot> placedPieces = null)
         {
-            placedPieces = placedPieces ?? HandController.HandSlots.Where(s => s.IsPlaced).ToList();
+            placedPieces ??= HandController.HandSlots.Where(s => s.IsPlaced).ToList();
 
             var bonusPoints = 0;
             if (placedPieces.Count == HandController.HandSlots.Length)
@@ -386,7 +396,22 @@ namespace kSlovnik.Game
 
         public static void EndGame(Constants.GameEndReason reason)
         {
-            MessageBox.Show("Game over");
+            if (reason != Constants.GameEndReason.Forced)
+            {
+                var players = Game.Current.Players.OrderByDescending(p => p.Score).ToList();
+                var winners = players.Where(p => p.Score == players[0].Score).ToList();
+
+                var winText = winners.Count switch
+                {
+                    1 => $"{winners[0].Name} печели!",
+                    2 => $"Равенство между {winners[0].Name} и {winners[1].Name}!",
+                    _ => $"Равенство: {string.Join(", ", winners.Select(w => w.Name))}!"
+                };
+
+                string message = $"{reason.GetDescription()}\n" +
+                                 $"{winText}";
+                MessageBox.Show(message, "Край на играта");
+            }
         }
     }
 }
