@@ -1,4 +1,5 @@
-﻿using kSlovnik.Board;
+﻿using Ionic.Zip;
+using kSlovnik.Board;
 using kSlovnik.Generic;
 using kSlovnik.Player;
 using System;
@@ -229,6 +230,19 @@ namespace kSlovnik
         public static Image ImageFromBase64String(string base64String)
         {
             return Image.FromStream(new MemoryStream(Convert.FromBase64String(base64String)));
+        }
+
+        public static void CreatePackagedFile(string packagedFileName, params string[] files)
+        {
+            using (ZipFile zip = new ZipFile(packagedFileName))
+            {
+                zip.AddFiles(files, false, "");
+                zip.Save();
+                foreach (var file in files)
+                {
+                    File.Delete(file);
+                }
+            }
         }
     }
 }

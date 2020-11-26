@@ -17,7 +17,7 @@ namespace kSlovnik.Controls
                 RestoreDirectory = true,
                 Title = "Изберете игра",
                 DefaultExt = "game",
-                Filter = "Saved games (*.game)|*.game",
+                Filter = "Saved game (*.save)|*.save",
                 FilterIndex = 0,
                 CheckPathExists = true,
                 CheckFileExists = true

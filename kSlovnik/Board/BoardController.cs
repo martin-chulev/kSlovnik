@@ -12,11 +12,15 @@ namespace kSlovnik.Board
 {
     public static class BoardController
     {
+        public static ShadowedPanel BoardContainer;
         public static Panel BoardControl;
 
         public static void LoadBoard(Control contentPanel)
         {
-            var boardContainer = new ShadowedPanel
+            if (BoardContainer != null && contentPanel.Controls.Contains(BoardContainer))
+                contentPanel.Controls.Remove(BoardContainer);
+
+            BoardContainer = new ShadowedPanel
             {
                 Location = new Point(0, 0),
                 Width = Board.Columns * Board.SlotSize + Constants.BorderThickness,
@@ -24,8 +28,11 @@ namespace kSlovnik.Board
                 BackColor = Color.Black,
                 BorderStyle = BorderStyle.None
             };
-            boardContainer.DropShadow();
-            contentPanel.Controls.Add(boardContainer);
+            BoardContainer.DropShadow();
+            contentPanel.Controls.Add(BoardContainer);
+
+            if (BoardControl != null && BoardControl.HasChildren)
+                BoardControl.Controls.Clear();
 
             BoardControl = new Panel
             {
@@ -34,7 +41,7 @@ namespace kSlovnik.Board
                 Height = Board.Rows * Board.SlotSize,
                 BorderStyle = BorderStyle.None
             };
-            boardContainer.Controls.Add(BoardControl);
+            BoardContainer.Controls.Add(BoardControl);
 
             var unfilledPositions = new List<Position>();
             for (int r = 0; r < Board.Rows; r++)

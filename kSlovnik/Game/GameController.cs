@@ -27,8 +27,10 @@ namespace kSlovnik.Game
             SidebarController.RenderTurnPlayerLabel();
 
             DeckController.LoadDeck();
+            HandController.ReturnAllToHand(changeVisualPosition: true);
             HandController.LoadHand(Game.Current.CurrentPlayer);
             HandController.SaveHand(Game.Current.CurrentPlayer);
+            BoardController.LoadBoard(Program.MainView.Controls.Find("content", true).First());
         }
 
         public static async Task ContinueFromLoadedTurn()
@@ -99,7 +101,6 @@ namespace kSlovnik.Game
                 {
                     Game.Current.CurrentPlayerIndex = 0;
                 }
-                Game.Save(autosave: true);
             }
             SidebarController.ToggleUserButtons(Game.Current.CurrentPlayer.IsAI == false);
             SidebarController.RenderTurnPlayerLabel();
@@ -108,6 +109,10 @@ namespace kSlovnik.Game
             if (Game.Current.CurrentPlayer.IsAI)
             {
                 Game.Current.CurrentPlayer.AI.PlayTurn();
+            }
+            else
+            {
+                if(nextPlayer) Game.Save(autosave: true);
             }
         }
 

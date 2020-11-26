@@ -1,6 +1,8 @@
-﻿using kSlovnik.Piece;
+﻿using Ionic.Zip;
+using kSlovnik.Piece;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -76,7 +78,8 @@ namespace kSlovnik.Game
                     var autosavePath = Path.Combine(Constants.SavesFolder, "Autosave");
                     if (Directory.Exists(autosavePath))
                     {
-                        Directory.Delete(autosavePath, true); // Delete existing autosaves
+                        // TODO: Delete autosaves for oldest game if more than 10 games autosaved
+                        //Directory.Delete(autosavePath, true); // Delete existing autosaves
                     }
                     Directory.CreateDirectory(autosavePath);
                 }
@@ -91,10 +94,12 @@ namespace kSlovnik.Game
                     File.Delete(gameFilePath);
 
                 File.WriteAllText(gameFilePath, JsonSerializer.Serialize(Game.Current, options: new JsonSerializerOptions { WriteIndented = true }));
-                /*Program.MainView.Invoke((MethodInvoker)delegate
+                Program.MainView.Invoke((MethodInvoker)delegate
                 {
-                    Util.CaptureScreenshot(Program.MainView, gameFileNameNoExt + ".png");
-                });*/
+                    var thumbnailPath = Path.Combine(folderPath, gameFileNameNoExt + ".png");
+                    Util.CaptureScreenshot(Program.MainView, thumbnailPath);
+                    Util.CreatePackagedFile(Path.Combine(folderPath, gameFileNameNoExt + ".save"), gameFilePath, thumbnailPath);
+                });
                 return true;
             }
             catch (Exception e)
@@ -113,18 +118,26 @@ namespace kSlovnik.Game
 
                 if (idIsFullPath)
                 {
-                    Game.Current = JsonSerializer.Deserialize<Game>(File.ReadAllText(id));
+                    Game.Current = LoadSaveFileGame(id);
                     return true;
                 }
 
-                if (id == null) id = "autosave";
+                var folderPath = Constants.SavesFolder;
+                if (id == null)
+                {
+                    id = "autosave";
+                    folderPath = Path.Combine(folderPath, "Autosave");
+
+                    if (Directory.Exists(folderPath) == false)
+                        return false;
+                }
 
                 // Get most recent save
-                var autosavePaths = Directory.GetFiles(Constants.SavesFolder).Where(p => Path.GetFileName(p).StartsWith(id)).ToList();
+                var autosavePaths = Directory.GetFiles(folderPath).Where(p => Path.GetFileName(p).StartsWith(id) && Path.GetFileName(p).EndsWith(".save")).ToList();
                 if (autosavePaths.Any())
                 {
                     var gameFilePath = autosavePaths.OrderByDescending(p => new FileInfo(p).LastWriteTime).First();
-                    Game.Current = JsonSerializer.Deserialize<Game>(File.ReadAllText(gameFilePath));
+                    Game.Current = LoadSaveFileGame(gameFilePath);
                     return true;
                 }
                 else
@@ -137,6 +150,40 @@ namespace kSlovnik.Game
             {
                 // TODO: Log and message
                 return false;
+            }
+        }
+
+        public static Image LoadSaveFileThumbnail(string packagedFileName)
+        {
+            using (ZipFile zip = ZipFile.Read(packagedFileName))
+            {
+                var thumbnail = zip.Entries.FirstOrDefault(f => f.FileName.EndsWith(".png"));
+                using (MemoryStream fs = new MemoryStream())
+                {
+                    thumbnail.Extract(fs);
+                    fs.Seek(0, SeekOrigin.Begin);
+                    return Image.FromStream(fs);
+                }
+            }
+        }
+
+        public static Game LoadSaveFileGame(string packagedFileName)
+        {
+            using (ZipFile zip = ZipFile.Read(packagedFileName))
+            {
+                var thumbnail = zip.Entries.FirstOrDefault(f => f.FileName.EndsWith(".png"));
+
+                var game = zip.Entries.FirstOrDefault(f => f.FileName.EndsWith(".game"));
+                using (MemoryStream fs = new MemoryStream())
+                {
+                    game.Extract(fs);
+                    fs.Seek(0, SeekOrigin.Begin);
+                    using (StreamReader sr = new StreamReader(fs))
+                    {
+                        var gameJson = sr.ReadToEnd();
+                        return JsonSerializer.Deserialize<Game>(gameJson);
+                    }
+                }
             }
         }
     }

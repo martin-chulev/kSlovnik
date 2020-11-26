@@ -27,8 +27,12 @@ namespace kSlovnik.Controls
         protected override void OnParentChanged(EventArgs e)
         {
             base.OnParentChanged(e);
-            this.Parent.Controls.Add(shadowPanel);
-            this.Parent.Controls.SetChildIndex(shadowPanel, this.Parent.Controls.GetChildIndex(this) + 1);
+            shadowPanel.Parent = null;
+            if (this.Parent?.Controls != null)
+            {
+                this.Parent.Controls.Add(shadowPanel);
+                this.Parent.Controls.SetChildIndex(shadowPanel, this.Parent.Controls.GetChildIndex(this) + 1);
+            }
         }
 
         protected override void OnSizeChanged(EventArgs e)

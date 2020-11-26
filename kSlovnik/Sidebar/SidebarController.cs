@@ -350,7 +350,13 @@ namespace kSlovnik.Sidebar
 
         private static void LoadSubButton_Click(object sender, EventArgs e)
         {
-            var saveFilePath = LoadSavedGameDialog.SelectFile();
+            if (Prompt.ChooseGame(out var loadedGame))
+            {
+                Game.Game.Current = loadedGame;
+                SidebarController.RenderSidebar();
+                Task.Run(() => GameController.ContinueFromLoadedTurn());
+            }
+            /*var saveFilePath = LoadSavedGameDialog.SelectFile();
             if (string.IsNullOrEmpty(saveFilePath) == false)
             {
                 if(Game.Game.Load(saveFilePath, true))
@@ -358,7 +364,7 @@ namespace kSlovnik.Sidebar
                     SidebarController.RenderSidebar();
                     Task.Run(() => GameController.ContinueFromLoadedTurn());
                 }
-            }
+            }*/
         }
 
         private static void SaveSubButton_Click(object sender, EventArgs e)
