@@ -25,8 +25,36 @@ namespace kSlovnik.Controls
             {
                 dataSource = value ?? new List<T>();
                 RefreshData();
+                SelectedIndex = null;
+                UpdateSelectionHighlight();
             }
         }
+
+        public bool IsClickable { get; private set; }
+
+        // TODO: Add SelectionChangedEventArgs which contains the previous item
+        public delegate void SelectionChangedEventHandler(Grid<T> sender);
+        public event SelectionChangedEventHandler SelectionChanged;
+
+        private int? selectedIndex;
+        public int? SelectedIndex
+        {
+            get
+            {
+                return selectedIndex;
+            }
+            set
+            {
+                selectedIndex = value;
+                UpdateSelectionHighlight();
+                SelectionChanged?.Invoke(this);
+            }
+        }
+
+        public T SelectedItem => SelectedIndex.HasValue ? DataRows[SelectedIndex.Value].Item : default;
+
+        public Color SelectionBackColor { get; set; } = Color.DarkGray;
+        public Color SelectionForeColor { get; set; } = Color.Black;
 
         public bool IsInitialized { get; private set; }
 
@@ -60,8 +88,10 @@ namespace kSlovnik.Controls
         /// </summary>
         /// <param name="rowCount">-1 for auto-calculated number.</param>
         /// <param name="hasHeader">Determines whether the first row is filled with column names.</param>
-        public void Init(int rowCount = -1, int desiredRowHeight = -1, bool stretchRows = false, bool hasHeader = true)
+        public void Init(int rowCount = -1, int desiredRowHeight = -1, bool stretchRows = false, bool hasHeader = true, bool clickable = false)
         {
+            this.IsClickable = clickable;
+
             var currentStartingY = 0;
 
             if (hasHeader)
@@ -97,7 +127,7 @@ namespace kSlovnik.Controls
             for (int i = 0; i < rowCount; i++)
             {
                 if (i == rowCount - 1) rowHeight = this.Height - currentStartingY;
-                var row = new Row(currentStartingY, Columns, default(T), Width - 2 * SystemInformation.BorderSize.Width, Font, rowHeight);
+                var row = new Row(i, currentStartingY, Columns, default(T), Width - 2 * SystemInformation.BorderSize.Width, Font, rowHeight, clickable);
                 this.DataRows.Add(row);
                 this.Controls.Add(row);
                 currentStartingY = row.Bottom;
@@ -106,13 +136,16 @@ namespace kSlovnik.Controls
             this.IsInitialized = true;
         }
 
-        // TODO: Add a way to iterate pages
         private void RefreshData(int page = 0)
         {
             if (this.IsInitialized == false) throw new Exception($"Grid hasn't been initialized yet. Call {nameof(Init)} first.");
 
-            var pageCount = this.dataSource.Count / this.DataRows.Count; // Get full pages
-            if (this.dataSource.Count % this.DataRows.Count > 0) pageCount++; // Add extra page for remainder (if any)
+            int pageCount = 1;
+            if (this.dataSource.Count > this.DataRows.Count)
+            {
+                pageCount = this.dataSource.Count / (this.DataRows.Count - 1); // Get full pages, considering arrows row
+                if (this.dataSource.Count % (this.DataRows.Count - 1) > 0) pageCount++; // Add extra page for remainder (if any), considering arrows row
+            }
 
             if (page >= pageCount)
             {
@@ -147,21 +180,24 @@ namespace kSlovnik.Controls
                     // Add page arrows
                     var cellValues = new object[this.DataRows.Last().Columns.Count];
 
-                    if (this.currentPage > 0)
+                    if (cellValues.Length > 0)
                     {
-                        var leftArrow = new Button() { Image = ImageController.LetterImagesActive['х'] };
-                        leftArrow.Click += (sender, args) => RefreshData(this.currentPage - 1);
-                        cellValues[0] = leftArrow;
-                    }
+                        if (this.currentPage > 0)
+                        {
+                            var leftArrow = new Button() { Text = "⮜" /*Image = ImageController.LetterImagesActive['х']*/ };
+                            leftArrow.Click += (sender, args) => RefreshData(this.currentPage - 1);
+                            cellValues[0] = leftArrow;
+                        }
 
-                    if (this.currentPage < pageCount - 1)
-                    {
-                        var rightArrow = new Button() { Image = ImageController.LetterImagesActive['а'] };
-                        rightArrow.Click += (sender, args) => RefreshData(this.currentPage + 1);
-                        cellValues[cellValues.Length - 1] = rightArrow;
+                        if (this.currentPage < pageCount - 1)
+                        {
+                            var rightArrow = new Button() { Text = "⮞" /*Image = ImageController.LetterImagesActive['а']*/ };
+                            rightArrow.Click += (sender, args) => RefreshData(this.currentPage + 1);
+                            cellValues[cellValues.Length - 1] = rightArrow;
+                        }
+
+                        this.DataRows.Last().SetItem(cellValues);
                     }
-                    
-                    this.DataRows.Last().SetItem(cellValues);
                 }
             }
             else
@@ -169,6 +205,25 @@ namespace kSlovnik.Controls
                 for (int i = 0; i < this.DataRows.Count; i++)
                 {
                     this.DataRows[i].SetItem(default(T));
+                }
+            }
+        }
+
+        protected void UpdateSelectionHighlight()
+        {
+            if (this.IsClickable) {
+                for (int i = 0; i < this.DataRows.Count; i++)
+                {
+                    if (i == SelectedIndex)
+                    {
+                        this.DataRows[i].BackColor = SelectionBackColor;
+                        this.DataRows[i].ForeColor = SelectionForeColor;
+                    }
+                    else
+                    {
+                        this.DataRows[i].BackColor = DefaultBackColor;
+                        this.DataRows[i].ForeColor = DefaultForeColor;
+                    }
                 }
             }
         }
@@ -198,7 +253,8 @@ namespace kSlovnik.Controls
 
         public class Row : Panel
         {
-            private T item;
+            public int RowIndex { get; set; }
+            public T Item { get; private set; }
             public bool IsHeader { get; }
             public List<Column> Columns { get; }
 
@@ -228,9 +284,10 @@ namespace kSlovnik.Controls
             /// </summary>
             /// <param name="columns"></param>
             /// <param name="item"></param>
-            public Row(int offsetY, List<Column> columns, T item, int width, Font font, int? height = null)
+            public Row(int rowIndex, int offsetY, List<Column> columns, T item, int width, Font font, int? height = null, bool clickable = false)
             {
-                this.item = item;
+                this.Item = item;
+                this.RowIndex = rowIndex;
                 this.IsHeader = false;
                 this.Columns = new List<Column>(columns);
                 this.Width = width;
@@ -247,11 +304,31 @@ namespace kSlovnik.Controls
                     this.Controls.Add(cell);
                     currentStartingX = cell.Right;
                 }
+
+                if (clickable)
+                {
+                    this.Click += Row_Click;
+                }
+            }
+
+            private void Row_Click(object sender, EventArgs e)
+            {
+                if (this.Parent is Grid<T> grid && grid.IsClickable)
+                {
+                    grid.SelectedIndex = this.Item != null && this.Item.Equals(default(T)) == false ?
+                                         this.RowIndex :
+                                         null;
+                }
+            }
+
+            public void OnClick()
+            {
+                Row_Click(null, null);
             }
 
             public void SetItem(T item)
             {
-                this.item = item;
+                this.Item = item;
 
                 foreach (var control in this.Controls)
                 {
@@ -265,7 +342,7 @@ namespace kSlovnik.Controls
 
                 if (this.Parent is Grid<T> grid)
                 {
-                    grid.OnStylesApplied(this, this.item);
+                    grid.OnStylesApplied(this, this.Item);
                 }
             }
 
@@ -283,9 +360,9 @@ namespace kSlovnik.Controls
 
             protected override void OnParentChanged(EventArgs e)
             {
-                if (this.Parent is Grid<T> grid && this != grid.HeaderRow)
+                if (this.Parent is Grid<T> grid && this.IsHeader == false)
                 {
-                    grid.OnStylesApplied(this, this.item);
+                    grid.OnStylesApplied(this, this.Item);
                 }
             }
 
@@ -401,6 +478,17 @@ namespace kSlovnik.Controls
                         });
                     }
                 }
+            }
+
+            public Cell() : base()
+            {
+                this.MouseDown += (sender, args) =>
+                {
+                    if (this.Parent is Row row)
+                    {
+                        row.OnClick();
+                    }
+                };
             }
         }
     }

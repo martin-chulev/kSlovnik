@@ -4,6 +4,7 @@ using kSlovnik.Generic;
 using kSlovnik.Piece;
 using kSlovnik.Player;
 using kSlovnik.Resources;
+using kSlovnik.Windows;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -113,11 +114,13 @@ namespace kSlovnik.Sidebar
             newGameSubButton.Click += NewGameSubButton_Click;
             gameButton.DropDownItems.Add(newGameSubButton);
             gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Мрежова Игра...", withSeparator: true, enabled: false));
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Играчи...", enabled: true));
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Постижения", withSeparator: true, enabled: true));
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Речник", enabled: true));
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Трудност", withSeparator: true, enabled: true));
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Изглед", enabled: true));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Играчи...", enabled: false));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Постижения", withSeparator: true, enabled: false));
+            var dictionarySubButton = new MenuDropDownItem("Речник", enabled: true);
+            dictionarySubButton.Click += DictionarySubButton_Click;
+            gameButton.DropDownItems.Add(dictionarySubButton);
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Трудност", withSeparator: true, enabled: false));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Изглед", enabled: false));
             var soundsSubButton = new MenuDropDownItem("Звуци", isToggled: UserSettings.SoundsOn, enabled: true);
             soundsSubButton.Click += SoundsSubButton_Click;
             gameButton.DropDownItems.Add(soundsSubButton);
@@ -132,9 +135,9 @@ namespace kSlovnik.Sidebar
             };
             #region Help dropdown items
             helpButton.DropDown = new MenuDropDown();
-            helpButton.DropDownItems.Add(new MenuDropDownItem("Индекс...", enabled: true));
-            helpButton.DropDownItems.Add(new MenuDropDownItem("Правила...", withSeparator: true, enabled: true));
-            helpButton.DropDownItems.Add(new MenuDropDownItem("Относно КръстоСловник...", enabled: true));
+            helpButton.DropDownItems.Add(new MenuDropDownItem("Индекс...", enabled: false));
+            helpButton.DropDownItems.Add(new MenuDropDownItem("Правила...", withSeparator: true, enabled: false));
+            helpButton.DropDownItems.Add(new MenuDropDownItem("Относно КръстоСловник...", enabled: false));
             #endregion
             Sidebar.Menu.Items.Add(helpButton);
             #endregion
@@ -357,10 +360,14 @@ namespace kSlovnik.Sidebar
 
         private static void NewGameSubButton_Click(object sender, EventArgs e)
         {
-            Game.GameController.NewGame();
-            SidebarController.RenderSidebar();
-            Game.Game.Save(autosave: true);
-            Task.Run(() => GameController.ContinueFromLoadedTurn());
+            var confirmed = MessageBox.Show("Сигурни ли сте?", "Нова игра", MessageBoxButtons.YesNo) == DialogResult.Yes;
+            if (confirmed)
+            {
+                Game.GameController.NewGame();
+                SidebarController.RenderSidebar();
+                Game.Game.Save(autosave: true);
+                Task.Run(() => GameController.ContinueFromLoadedTurn());
+            }
         }
 
         private static void LoadSubButton_Click(object sender, EventArgs e)
@@ -372,6 +379,7 @@ namespace kSlovnik.Sidebar
                 if (confirmed)
                 {
                     Game.Game.Current = Game.Game.LoadSaveFileGame(loadedGamePath);
+                    HandController.ReturnAllToHand();
                     SidebarController.RenderSidebar();
                     Task.Run(() => GameController.ContinueFromLoadedTurn());
                 }
@@ -391,6 +399,12 @@ namespace kSlovnik.Sidebar
         {
             if (Game.Game.Save(autosave: false))
                 MessageBox.Show("Играта е запазена");
+        }
+
+        private static void DictionarySubButton_Click(object sender, EventArgs e)
+        {
+            var dictionaryWindow = new DictionaryEditor(Program.MainView);
+            dictionaryWindow.Show();
         }
 
         private static void SoundsSubButton_Click(object sender, EventArgs e)

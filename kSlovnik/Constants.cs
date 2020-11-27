@@ -88,7 +88,7 @@ namespace kSlovnik
         {
             public static readonly Font Default = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
             public static readonly Font ScoreboardGrid = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
-            public static readonly Font TurnPointsLabel = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
+            public static readonly Font TurnPointsLabel = new Font("Microsoft Sans Serif", 10, FontStyle.Bold);
             public static readonly Font WordsGrid = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
         }
 
