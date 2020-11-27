@@ -6,6 +6,7 @@ using kSlovnik.Player;
 using kSlovnik.Resources;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -87,14 +88,16 @@ namespace kSlovnik.Sidebar
             saveSubButton.Click += SaveSubButton_Click;
             fileButton.DropDownItems.Add(saveSubButton);
 
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Запиши като...", withSeparator: true, enabled: true));
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Запиши като...", withSeparator: true, enabled: false));
 
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Печат...", enabled: true));
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Печат Инициализация...", withSeparator: true, enabled: true));
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Печат...", enabled: false));
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Печат Инициализация...", withSeparator: true, enabled: false));
 
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Последни Игри", withSeparator: true, enabled: true));
+            fileButton.DropDownItems.Add(new MenuDropDownItem("Последни Игри", withSeparator: true, enabled: false));
 
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Изход", enabled: true));
+            var exitSubButton = new MenuDropDownItem("Изход", enabled: true);
+            exitSubButton.Click += ExitSubButton_Click;
+            fileButton.DropDownItems.Add(exitSubButton);
             #endregion
             Sidebar.Menu.Items.Add(fileButton);
             #endregion
@@ -109,7 +112,7 @@ namespace kSlovnik.Sidebar
             var newGameSubButton = new MenuDropDownItem("Нова Игра", enabled: true);
             newGameSubButton.Click += NewGameSubButton_Click;
             gameButton.DropDownItems.Add(newGameSubButton);
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Мрежова Игра...", withSeparator: true, enabled: true));
+            gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Мрежова Игра...", withSeparator: true, enabled: false));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Играчи...", enabled: true));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Постижения", withSeparator: true, enabled: true));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Речник", enabled: true));
@@ -175,7 +178,7 @@ namespace kSlovnik.Sidebar
             Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(nameof(Player.Player.TurnsPlayed), "Ходове", 20, ContentAlignment.MiddleRight));
             Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(nameof(Player.Player.Score), "Точки", 20, ContentAlignment.MiddleRight));
             Sidebar.ScoreboardGrid.Columns.Add(new Grid<Player.Player>.Column(null, null, 10, ContentAlignment.MiddleRight));
-            Sidebar.ScoreboardGrid.Init();
+            Sidebar.ScoreboardGrid.Init(5, stretchRows: true);
             Sidebar.ScoreboardContainer.Controls.Add(Sidebar.ScoreboardGrid);
             #endregion
 
@@ -335,26 +338,41 @@ namespace kSlovnik.Sidebar
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.Text), "Думи", 55, ContentAlignment.MiddleLeft));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.Points), "Точки", 25, ContentAlignment.MiddleRight));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(null, null, 10, ContentAlignment.MiddleRight));
-            Sidebar.WordsGrid.Init();
+            Sidebar.WordsGrid.Init(12, stretchRows: true);
             Sidebar.WordsContainer.Controls.Add(Sidebar.WordsGrid);
             #endregion
         }
 
         #region Menu button functions
+        private static void ExitSubButton_Click(object sender, EventArgs e)
+        {
+            var confirmed = MessageBox.Show("Сигурни ли сте?", "Изход", MessageBoxButtons.YesNo) == DialogResult.Yes;
+            if (confirmed)
+            {
+                Application.Exit();
+            }
+        }
+
         private static void NewGameSubButton_Click(object sender, EventArgs e)
         {
             Game.GameController.NewGame();
             SidebarController.RenderSidebar();
+            Game.Game.Save(autosave: true);
             Task.Run(() => GameController.ContinueFromLoadedTurn());
         }
 
         private static void LoadSubButton_Click(object sender, EventArgs e)
         {
-            if (Prompt.ChooseGame(out var loadedGame))
+            if (Prompt.ChooseGame())
             {
-                Game.Game.Current = loadedGame;
-                SidebarController.RenderSidebar();
-                Task.Run(() => GameController.ContinueFromLoadedTurn());
+                var loadedGamePath = Prompt.SelectedGamePath;
+                var confirmed = MessageBox.Show("Сигурни ли сте?", "Зареждане на игра", MessageBoxButtons.YesNo) == DialogResult.Yes;
+                if (confirmed)
+                {
+                    Game.Game.Current = Game.Game.LoadSaveFileGame(loadedGamePath);
+                    SidebarController.RenderSidebar();
+                    Task.Run(() => GameController.ContinueFromLoadedTurn());
+                }
             }
             /*var saveFilePath = LoadSavedGameDialog.SelectFile();
             if (string.IsNullOrEmpty(saveFilePath) == false)
@@ -481,13 +499,28 @@ namespace kSlovnik.Sidebar
                 var points = GameController.CalculatePoints(placedPieces);
 
                 if (Sidebar.WordsGrid != null)
+                {
+                    if (words.Count > 0)
+                    {
+                        List<Word> bonuses = new List<Word>() { new Word() { Text = "Общо:", Points = points, IsValid = true } };
+
+                        var separatorRowsCount = Sidebar.WordsGrid.DataRows.Count - words.Count - bonuses.Count;
+                        for (int i = 0; i < separatorRowsCount; i++)
+                        {
+                            words.Add(null);
+                        }
+                        words.AddRange(bonuses);
+                    }
                     Sidebar.WordsGrid.DataSource = words;
+                }
                 RenderTurnPointsLabel(points);
             }
             else
             {
                 if (Sidebar.WordsGrid != null)
+                {
                     Sidebar.WordsGrid.DataSource = null;
+                }
                 RenderTurnPointsLabel(0);
             }
         }

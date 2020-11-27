@@ -55,7 +55,12 @@ namespace kSlovnik.Controls
             this.AutoScroll = false;
         }
 
-        public void Init(bool hasHeader = true)
+        /// <summary>
+        /// Initialize the grid.
+        /// </summary>
+        /// <param name="rowCount">-1 for auto-calculated number.</param>
+        /// <param name="hasHeader">Determines whether the first row is filled with column names.</param>
+        public void Init(int rowCount = -1, int desiredRowHeight = -1, bool stretchRows = false, bool hasHeader = true)
         {
             var currentStartingY = 0;
 
@@ -66,8 +71,28 @@ namespace kSlovnik.Controls
                 currentStartingY = this.HeaderRow.Bottom;
             }
 
-            var rowHeight = Font.Height + Constants.GridRowPadding;
-            var rowCount = (Height - currentStartingY) / rowHeight;
+            int rowHeight;
+            if (rowCount == -1)
+            {
+                // Calculate from font height
+                rowHeight = desiredRowHeight == -1 ? Font.Height + Constants.GridRowPadding : desiredRowHeight;
+                rowCount = (this.Height - currentStartingY) / rowHeight;
+            }
+            else
+            {
+                // Calculate from control height
+                rowHeight = (this.Height - currentStartingY) / rowCount;
+
+                if (stretchRows == false)
+                {
+                    var rowHeightFromFont = Font.Height + Constants.GridRowPadding;
+                    if(rowHeightFromFont < rowHeight)
+                    {
+                        rowHeight = rowHeightFromFont;
+                        rowCount = (this.Height - currentStartingY) / rowHeight;
+                    }
+                }
+            }
 
             for (int i = 0; i < rowCount; i++)
             {
@@ -86,18 +111,57 @@ namespace kSlovnik.Controls
         {
             if (this.IsInitialized == false) throw new Exception($"Grid hasn't been initialized yet. Call {nameof(Init)} first.");
 
-            this.currentPage = 0;
+            var pageCount = this.dataSource.Count / this.DataRows.Count; // Get full pages
+            if (this.dataSource.Count % this.DataRows.Count > 0) pageCount++; // Add extra page for remainder (if any)
+
+            if (page >= pageCount)
+            {
+                this.currentPage = 0;
+            }
+            else if (page < 0)
+            {
+                this.currentPage = pageCount - 1;
+            }
+            else
+            {
+                this.currentPage = page;
+            }
+
+            var dataRowCount = this.DataRows.Count;
+            if (pageCount > 1) dataRowCount--; // Leave last row empty for buttons
 
             if (this.dataSource.Count > 0)
             {
-                var startIndex =  (this.dataSource.Count / this.DataRows.Count) * page;
-                var endIndex = startIndex + this.dataSource.Count % this.DataRows.Count - 1;
-                for (int i = 0; i < this.DataRows.Count; i++)
+                var startIndex = dataRowCount * this.currentPage;
+                var endIndex = startIndex + Math.Min(dataRowCount, this.dataSource.Count - startIndex) - 1;
+                for (int i = 0; i < dataRowCount; i++)
                 {
                     if (startIndex + i <= endIndex)
                         this.DataRows[i].SetItem(this.dataSource[startIndex + i]);
                     else
                         this.DataRows[i].SetItem(default(T));
+                }
+                
+                if (pageCount > 1)
+                {
+                    // Add page arrows
+                    var cellValues = new object[this.DataRows.Last().Columns.Count];
+
+                    if (this.currentPage > 0)
+                    {
+                        var leftArrow = new Button() { Image = ImageController.LetterImagesActive['х'] };
+                        leftArrow.Click += (sender, args) => RefreshData(this.currentPage - 1);
+                        cellValues[0] = leftArrow;
+                    }
+
+                    if (this.currentPage < pageCount - 1)
+                    {
+                        var rightArrow = new Button() { Image = ImageController.LetterImagesActive['а'] };
+                        rightArrow.Click += (sender, args) => RefreshData(this.currentPage + 1);
+                        cellValues[cellValues.Length - 1] = rightArrow;
+                    }
+                    
+                    this.DataRows.Last().SetItem(cellValues);
                 }
             }
             else
@@ -205,6 +269,18 @@ namespace kSlovnik.Controls
                 }
             }
 
+            public void SetItem(object[] values)
+            {
+                foreach (var control in this.Controls)
+                {
+                    if (control is Cell cell)
+                    {
+                        var i = cell.Index;
+                        cell.Value = values.Length > i ? values[i] : null;
+                    }
+                }
+            }
+
             protected override void OnParentChanged(EventArgs e)
             {
                 if (this.Parent is Grid<T> grid && this != grid.HeaderRow)
@@ -239,7 +315,9 @@ namespace kSlovnik.Controls
 
         public class Cell : Label
         {
-            public object value;
+            private object value = null;
+            private bool isButton = false;
+            private bool hasClickEvent = false;
 
             public int Index { get; set; }
 
@@ -265,6 +343,26 @@ namespace kSlovnik.Controls
                             this.Text = string.Empty;
                             this.Image = image.ToSize((int)(this.Height * 0.7));
                             this.value = this.Image;
+                            this.isButton = false;
+                        }
+                        else if (value is Button button)
+                        {
+                            this.Text = button.Text;
+                            this.Image = button.Image?.ToSize((int)(this.Height * 0.7));
+                            this.value = this.Image;
+
+                            if (this.isButton == false && hasClickEvent == false)
+                            {
+                                this.Click += (sender, args) =>
+                                {
+                                    if (sender is Cell cell && cell.isButton == true)
+                                    {
+                                        button?.PerformClick();
+                                    }
+                                };
+                                this.hasClickEvent = true;
+                            }
+                            this.isButton = true;
                         }
                         else
                         {
@@ -276,6 +374,7 @@ namespace kSlovnik.Controls
                             };
                             this.Image = null;
                             this.value = this.Text;
+                            this.isButton = false;
                         }
                     }
                     catch

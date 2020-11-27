@@ -11,9 +11,11 @@ namespace kSlovnik.Controls
 {
     public static class Prompt
     {
-        public static bool ChooseGame(out Game.Game selectedGame)
+        public static string SelectedGamePath { get; private set; }
+
+        public static bool ChooseGame()
         {
-            selectedGame = null;
+            SelectedGamePath = null;
 
             var promptWidth = (int)(Program.MainView.ClientSize.Width / 1.5);
             var promptHeight = (int)(Program.MainView.ClientSize.Height / 2);
@@ -75,6 +77,7 @@ namespace kSlovnik.Controls
             prompt.Controls.Add(buttonPanel);
             Button confirmButton = new Button()
             {
+                Name = "ConfirmButton",
                 Left = 0,
                 Top = Constants.Padding.Top / 2,
                 Width = (buttonPanel.Width - Constants.Padding.Left / 2) / 2,
@@ -85,6 +88,7 @@ namespace kSlovnik.Controls
             buttonPanel.Controls.Add(confirmButton);
             Button cancelButton = new Button()
             {
+                Name = "CancelButton",
                 Left = confirmButton.Right + Constants.Padding.Left / 2,
                 Top = confirmButton.Top,
                 Width = confirmButton.Width,
@@ -112,6 +116,7 @@ namespace kSlovnik.Controls
                     gameList.Items.Add(item);
                 }
                 gameList.SelectedIndexChanged += GameList_SelectedIndexChanged;
+                gameList.DoubleClick += GameList_DoubleClick;
                 if (gameList.Items.Count > 0)
                 {
                     gameList.Items[0].Selected = true;
@@ -122,11 +127,32 @@ namespace kSlovnik.Controls
             var response = prompt.ShowDialog();
             if (response == DialogResult.OK && gameList.SelectedItems.Count > 0)
             {
-                selectedGame = Game.Game.LoadSaveFileGame(gameList.SelectedItems[0].ImageKey);
+                SelectedGamePath = gameList.SelectedItems[0].ImageKey;
                 return true;
             }
 
             return false;
+        }
+
+        private static void GameList_DoubleClick(object sender, EventArgs e)
+        {
+            var prompt = sender;
+            if (prompt is Control control)
+            {
+                while (prompt is Form == false)
+                {
+                    prompt = control.Parent;
+                }
+            }
+            if (prompt is Form form)
+            {
+                SelectedGamePath = (sender as ListView).SelectedItems[0].ImageKey;
+                var confirmButton = form.Controls.Find("ConfirmButton", true).FirstOrDefault();
+                if (confirmButton is Button button)
+                {
+                    button.PerformClick();
+                }
+            }
         }
 
         private static void GameList_SelectedIndexChanged(object sender, EventArgs e)
