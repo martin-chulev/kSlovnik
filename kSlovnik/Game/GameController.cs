@@ -59,7 +59,10 @@ namespace kSlovnik.Game
             {
                 var words = GetNewWords(placedPieces);
                 if (WordsAreValid(words) == false)
+                {
+                    Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.InvalidWord);
                     return false;
+                }
 
                 Game.Current.TurnsWithoutPlacement = 0;
                 Game.Current.CurrentPlayer.TurnsPlayed++;
@@ -104,6 +107,7 @@ namespace kSlovnik.Game
             }
             SidebarController.ToggleUserButtons(Game.Current.CurrentPlayer.IsAI == false);
             SidebarController.RenderTurnPlayerLabel();
+            SidebarController.RenderTurnPointsLabel(0);
             SidebarController.RenderScoreboard();
             HandController.LoadHand(Game.Current.CurrentPlayer);
             if (Game.Current.CurrentPlayer.IsAI)
@@ -126,7 +130,10 @@ namespace kSlovnik.Game
             // Check if there is a piece in the center slot
             var centerSlot = Board.Board.CenterSlot;
             if (centerSlot.IsPending == false && centerSlot.IsFilled == false)
+            {
+                Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.CenterNotFilled);
                 return false;
+            }
 
             // Check if pieces are in the same horizontal line
             bool allInTheSameRow = !placedPieces.Select(p => p.CurrentBoardSlot.Position.Row)
@@ -140,21 +147,37 @@ namespace kSlovnik.Game
                                                    .Any();
             // If pieces are not in 1 line - placement is invalid
             if (allInTheSameRow == false && allInTheSameColumn == false)
+            {
+                Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.NotInALine);
                 return false;
+            }
 
             // Check if the pieces are in the same horizontal word
             if (allInTheSameRow)
+            {
                 if (HorizontalWordIsWhole(placedPieces) == false)
+                {
+                    Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.NotInALine);
                     return false;
+                }
+            }
 
             // Check if the pieces are in the same vertical word
             if (allInTheSameColumn)
+            {
                 if (VerticalWordIsWhole(placedPieces) == false)
+                {
+                    Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.NotInALine);
                     return false;
+                }
+            }
 
             // Check if any of the pieces is next to an already filled slot or in the center
             if (WordIsAttachedToFilledSlot(placedPieces) == false)
+            {
+                Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.NotAttached);
                 return false;
+            }
 
             return true;
         }
@@ -172,14 +195,14 @@ namespace kSlovnik.Game
             var words = GetNewWords(placedPieces);
             var basePoints = words.Sum(w => w.Points);
             var multiplier = 1;
-            foreach (var piece in placedPieces.Where(p => p.CurrentBoardSlot.Color == Constants.Colors.TileColors.x2))
+            /*foreach (var piece in placedPieces.Where(p => p.CurrentBoardSlot.Color == Constants.Colors.TileColors.x2))
             {
                 multiplier *= 2;
             }
             foreach (var piece in placedPieces.Where(p => p.CurrentBoardSlot.Color == Constants.Colors.TileColors.x3))
             {
                 multiplier *= 3;
-            }
+            }*/
             return basePoints * multiplier + bonusPoints;
         }
 
@@ -226,7 +249,9 @@ namespace kSlovnik.Game
                 }
             }
 
-            return words.Where(w => w.Text.Length >= Constants.MinimumWordLength).Validate().ToList();
+            var result = words.Where(w => w.Text.Length >= Constants.MinimumWordLength).Validate().ToList();
+            if (placedPieces.Count > 0 && result.Count == 0) Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.NoWords);
+            return result;
         }
 
         private static IEnumerable<Word> Validate(this IEnumerable<Word> words)
@@ -236,11 +261,13 @@ namespace kSlovnik.Game
                 word.IsValid = true;
                 if (word.Text.Length < Constants.MinimumWordLength)
                 {
+                    Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.InvalidWord);
                     word.IsValid = false;
                     continue;
                 }
                 if (WordController.WordExists(word.Text) == false)
                 {
+                    Game.Current.TurnErrors.Add(Constants.InvalidTurnReason.InvalidWord);
                     word.IsValid = false;
                     continue;
                 }
@@ -258,6 +285,8 @@ namespace kSlovnik.Game
 
         private static Word GetWordFromRow(int row, int startColumn)
         {
+            List<BoardSlot> letterPositions = new List<BoardSlot>();
+
             var column = startColumn;
             while (column - 1 >= 0)
             {
@@ -279,6 +308,7 @@ namespace kSlovnik.Game
             {
                 horizontalWordSB.Append(currentBoardSlot.CurrentLetter);
                 points += currentBoardSlot.Points;
+                letterPositions.Add(currentBoardSlot);
 
                 column++;
                 if (column == Board.Board.Columns)
@@ -291,12 +321,15 @@ namespace kSlovnik.Game
             return new Word
             {
                 Text = horizontalWordSB.ToString().ToUpperInvariant(),
-                Points = points
+                Points = points,
+                LetterPositions = letterPositions
             };
         }
 
         private static Word GetWordFromColumn(int column, int startRow)
         {
+            List<BoardSlot> letterPositions = new List<BoardSlot>();
+
             var row = startRow;
             while (row - 1 >= 0)
             {
@@ -318,6 +351,7 @@ namespace kSlovnik.Game
             {
                 verticalWordSB.Append(currentBoardSlot.CurrentLetter);
                 points += currentBoardSlot.Points;
+                letterPositions.Add(currentBoardSlot);
 
                 row++;
                 if (row == Board.Board.Rows)
@@ -330,7 +364,8 @@ namespace kSlovnik.Game
             return new Word
             {
                 Text = verticalWordSB.ToString().ToUpperInvariant(),
-                Points = points
+                Points = points,
+                LetterPositions = letterPositions
             };
         }
 

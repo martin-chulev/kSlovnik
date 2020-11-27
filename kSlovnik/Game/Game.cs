@@ -1,4 +1,5 @@
 ﻿using Ionic.Zip;
+using kSlovnik.Generic;
 using kSlovnik.Piece;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Forms;
+using static kSlovnik.Constants;
 
 namespace kSlovnik.Game
 {
@@ -32,6 +34,9 @@ namespace kSlovnik.Game
 
         [JsonInclude]
         public int TurnScore = 0;
+
+        [JsonIgnore]
+        public List<InvalidTurnReason> TurnErrors = new List<InvalidTurnReason>();
 
         [JsonInclude]
         public int TurnsWithoutPlacement = 0;

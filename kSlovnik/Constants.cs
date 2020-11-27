@@ -61,6 +61,24 @@ namespace kSlovnik
             [Description("Пуловете свършиха.")]
             NoMorePieces
         }
+
+        public enum InvalidTurnReason
+        {
+            [Description("Няма валидни думи.")]
+            NoWords,
+
+            [Description("Има невалидна дума в хода.")]
+            InvalidWord,
+
+            [Description("Няма съседство със запълнена клетка.")]
+            NotAttached,
+
+            [Description("Плочките трябва да образуват линия.")]
+            NotInALine,
+
+            [Description("Думата трябва да минава през центъра.")]
+            CenterNotFilled
+        }
         
         public const int MinimumWordLength = 2;
         public const int BonusPointsAllPiecesUsed = 50;
@@ -70,6 +88,7 @@ namespace kSlovnik
         {
             public static readonly Font Default = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
             public static readonly Font ScoreboardGrid = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
+            public static readonly Font TurnPointsLabel = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
             public static readonly Font WordsGrid = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
         }
 
@@ -77,7 +96,8 @@ namespace kSlovnik
         {
             public const string TurnPlayer = "Играе: {0}";
             public const string PiecesInDeck = "Налични пулове: {0}";
-            public const string TurnPoints = "Успешен ход - {0} точки";
+            public const string TurnPoints = "Успешен ход - {0} точки.";
+            public const string ComputerThinking = "Компютърът мисли...";
 
             public const string ChooseLetterPromptText = "Изберете буква:";
         }

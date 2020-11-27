@@ -299,12 +299,14 @@ namespace kSlovnik.Sidebar
                 Width = sidebarContentWidth + Constants.Shadows.DropShadowWidth,
                 BackColor = Color.Transparent,
                 ForeColor = Constants.Colors.FontBlue,
-                Font = Constants.Fonts.Default,
+                Font = Constants.Fonts.TurnPointsLabel,
                 TextAlign = ContentAlignment.BottomLeft,
                 Text = Constants.Texts.TurnPoints
             };
             Sidebar.TurnPointsLabel.Height = Sidebar.TurnPointsLabel.Font.Height;
             Sidebar.SidebarPanel.Controls.Add(Sidebar.TurnPointsLabel);
+            Sidebar.ToolTip = new ToolTip();
+            Sidebar.ToolTip.SetToolTip(Sidebar.TurnPointsLabel, Sidebar.TurnPointsLabel.Text);
             #endregion
 
             currentStartingY += Sidebar.TurnPointsLabel.Height + Constants.SidebarSeparatorHeight / 2;
@@ -463,16 +465,12 @@ namespace kSlovnik.Sidebar
                 Sidebar.ButtonConfirm.Enabled = enabled;
                 Sidebar.ButtonConfirm.BackColor = enabled ? Constants.Colors.ButtonColorBackActive : Constants.Colors.ButtonColorBackInactive;
                 Sidebar.ButtonConfirm.ForeColor = enabled ? Constants.Colors.ButtonColorForeActive : Constants.Colors.ButtonColorForeInactive;
-                //Sidebar.ButtonConfirm.Visible = enabled;
-                //Sidebar.ButtonConfirm.Parent.Visible = enabled;
             });
             Sidebar.ButtonReset.Invoke((MethodInvoker)delegate
             {
                 Sidebar.ButtonReset.Enabled = enabled;
                 Sidebar.ButtonReset.BackColor = enabled ? Constants.Colors.ButtonColorBackActive : Constants.Colors.ButtonColorBackInactive;
                 Sidebar.ButtonReset.ForeColor = enabled ? Constants.Colors.ButtonColorForeActive : Constants.Colors.ButtonColorForeInactive;
-                //Sidebar.ButtonReset.Visible = enabled;
-                //Sidebar.ButtonReset.Parent.Visible = enabled;
             });
             Sidebar.Menu.Invoke((MethodInvoker)delegate
             {
@@ -485,7 +483,33 @@ namespace kSlovnik.Sidebar
             Sidebar.TurnPointsLabel.Invoke((MethodInvoker)delegate
             {
                 if (Sidebar.TurnPointsLabel != null)
-                    Sidebar.TurnPointsLabel.Text = string.Format(Constants.Texts.TurnPoints, points);
+                {
+                    Sidebar.ToolTip?.RemoveAll();
+
+                    if (Game.Game.Current.CurrentPlayer.IsAI)
+                    {
+                        Sidebar.TurnPointsLabel.Text = Constants.Texts.ComputerThinking;
+                    }
+                    else
+                    {
+                        if (HandController.HandSlots.Any(s => s.IsPlaced) == false)
+                        {
+                            Sidebar.TurnPointsLabel.Text = string.Empty;
+                        }
+                        else if (Game.Game.Current.TurnErrors.Count > 0)
+                        {
+                            Sidebar.TurnPointsLabel.ForeColor = Constants.Colors.FontRed;
+                            Sidebar.TurnPointsLabel.Text = Game.Game.Current.TurnErrors.First().GetDescription();
+                            Sidebar.ToolTip.SetToolTip(Sidebar.TurnPointsLabel, Sidebar.TurnPointsLabel.Text);
+                        }
+                        else
+                        {
+                            Sidebar.TurnPointsLabel.ForeColor = Constants.Colors.FontBlue;
+                            Sidebar.TurnPointsLabel.Text = string.Format(Constants.Texts.TurnPoints, points);
+                            Sidebar.ToolTip.SetToolTip(Sidebar.TurnPointsLabel, Sidebar.TurnPointsLabel.Text);
+                        }
+                    }
+                }
             });
         }
 
@@ -493,36 +517,28 @@ namespace kSlovnik.Sidebar
         {
             var placedPieces = HandController.HandSlots.Where(s => s.IsPlaced).ToList();
 
-            if (GameController.PiecePlacementIsValid(placedPieces))
-            {
-                var words = GameController.GetNewWords(placedPieces);
-                var points = GameController.CalculatePoints(placedPieces);
+            GameController.PiecePlacementIsValid(placedPieces);
+            var words = GameController.GetNewWords(placedPieces);
+            var points = GameController.CalculatePoints(placedPieces);
 
-                if (Sidebar.WordsGrid != null)
+            if (Sidebar.WordsGrid != null)
+            {
+                if (words.Count > 0)
                 {
-                    if (words.Count > 0)
+                    List<Word> bonuses = new List<Word>();
+                    if (placedPieces.Count == Hand.PieceLimit) bonuses.Add(new Word() { Text = "Спечелен Бонус", Points = 50, IsValid = true });
+                    bonuses.Add(new Word() { Text = "Общо:", Points = points, IsValid = true });
+
+                    var separatorRowsCount = Sidebar.WordsGrid.DataRows.Count - words.Count - bonuses.Count;
+                    for (int i = 0; i < separatorRowsCount; i++)
                     {
-                        List<Word> bonuses = new List<Word>() { new Word() { Text = "Общо:", Points = points, IsValid = true } };
-
-                        var separatorRowsCount = Sidebar.WordsGrid.DataRows.Count - words.Count - bonuses.Count;
-                        for (int i = 0; i < separatorRowsCount; i++)
-                        {
-                            words.Add(null);
-                        }
-                        words.AddRange(bonuses);
+                        words.Add(null);
                     }
-                    Sidebar.WordsGrid.DataSource = words;
+                    words.AddRange(bonuses);
                 }
-                RenderTurnPointsLabel(points);
+                Sidebar.WordsGrid.DataSource = words;
             }
-            else
-            {
-                if (Sidebar.WordsGrid != null)
-                {
-                    Sidebar.WordsGrid.DataSource = null;
-                }
-                RenderTurnPointsLabel(0);
-            }
+            RenderTurnPointsLabel(points);
         }
     }
 }

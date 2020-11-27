@@ -52,6 +52,7 @@ namespace kSlovnik.Piece
                     WasOnBoard = true;
                     PreviousBoardIndex = (int)boardSlot.Tag;
                 }
+                Game.Game.Current.TurnErrors.Clear();
                 Sidebar.SidebarController.RenderWords();
             }
 
@@ -157,6 +158,7 @@ namespace kSlovnik.Piece
                 control.ReturnToHand();
             }
 
+            Game.Game.Current.TurnErrors.Clear();
             Sidebar.SidebarController.RenderWords();
 
             WasOnBoard = false;
