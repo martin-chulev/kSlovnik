@@ -36,6 +36,8 @@ namespace kSlovnik.Controls
         public delegate void SelectionChangedEventHandler(Grid<T> sender);
         public event SelectionChangedEventHandler SelectionChanged;
 
+        public bool HasSelectedItem { get => selectedIndex != null; }
+
         private int? selectedIndex;
         public int? SelectedIndex
         {
@@ -53,6 +55,8 @@ namespace kSlovnik.Controls
 
         public T SelectedItem => SelectedIndex.HasValue ? DataRows[SelectedIndex.Value].Item : default;
 
+        new public Color DefaultBackColor { get; set; } = Constants.Colors.GridBackColor;
+        new public Color DefaultForeColor { get; set; } = Color.Black;
         public Color SelectionBackColor { get; set; } = Color.DarkGray;
         public Color SelectionForeColor { get; set; } = Color.Black;
 
@@ -126,19 +130,34 @@ namespace kSlovnik.Controls
 
             for (int i = 0; i < rowCount; i++)
             {
-                if (i == rowCount - 1) rowHeight = this.Height - currentStartingY;
+                if (i == rowCount - 1) rowHeight = this.Height - currentStartingY - 2 * SystemInformation.BorderSize.Height;
                 var row = new Row(i, currentStartingY, Columns, default(T), Width - 2 * SystemInformation.BorderSize.Width, Font, rowHeight, clickable);
                 this.DataRows.Add(row);
                 this.Controls.Add(row);
                 currentStartingY = row.Bottom;
             }
 
+            if (this.HeaderRow != null) this.HeaderRow.BackColor = this.DefaultBackColor;
+            UpdateSelectionHighlight();
+
             this.IsInitialized = true;
+        }
+
+        public void NextPage()
+        {
+            RefreshData(this.currentPage+1);
+        }
+
+        public void PreviousPage()
+        {
+            RefreshData(this.currentPage-1);
         }
 
         private void RefreshData(int page = 0)
         {
             if (this.IsInitialized == false) throw new Exception($"Grid hasn't been initialized yet. Call {nameof(Init)} first.");
+
+            this.SelectedIndex = null;
 
             int pageCount = 1;
             if (this.dataSource.Count > this.DataRows.Count)
@@ -179,6 +198,7 @@ namespace kSlovnik.Controls
                 {
                     // Add page arrows
                     var cellValues = new object[this.DataRows.Last().Columns.Count];
+                    var contentAlignments = new ContentAlignment?[this.DataRows.Last().Columns.Count];
 
                     if (cellValues.Length > 0)
                     {
@@ -187,16 +207,22 @@ namespace kSlovnik.Controls
                             var leftArrow = new Button() { Text = "⮜" /*Image = ImageController.LetterImagesActive['х']*/ };
                             leftArrow.Click += (sender, args) => RefreshData(this.currentPage - 1);
                             cellValues[0] = leftArrow;
+                            contentAlignments[0] = ContentAlignment.MiddleCenter;
                         }
+
+                        var centerIndex = Math.Max(0, cellValues.Length / 2 - (1 - cellValues.Length % 2));
+                        cellValues[centerIndex] = $"страница {this.currentPage + 1} от {pageCount}";
+                        contentAlignments[centerIndex] = ContentAlignment.MiddleCenter;
 
                         if (this.currentPage < pageCount - 1)
                         {
                             var rightArrow = new Button() { Text = "⮞" /*Image = ImageController.LetterImagesActive['а']*/ };
                             rightArrow.Click += (sender, args) => RefreshData(this.currentPage + 1);
                             cellValues[cellValues.Length - 1] = rightArrow;
+                            contentAlignments[cellValues.Length - 1] = ContentAlignment.MiddleCenter;
                         }
 
-                        this.DataRows.Last().SetItem(cellValues);
+                        this.DataRows.Last().SetItem(cellValues, contentAlignments);
                     }
                 }
             }
@@ -211,19 +237,17 @@ namespace kSlovnik.Controls
 
         protected void UpdateSelectionHighlight()
         {
-            if (this.IsClickable) {
-                for (int i = 0; i < this.DataRows.Count; i++)
+            for (int i = 0; i < this.DataRows.Count; i++)
+            {
+                if (this.IsClickable && i == SelectedIndex)
                 {
-                    if (i == SelectedIndex)
-                    {
-                        this.DataRows[i].BackColor = SelectionBackColor;
-                        this.DataRows[i].ForeColor = SelectionForeColor;
-                    }
-                    else
-                    {
-                        this.DataRows[i].BackColor = DefaultBackColor;
-                        this.DataRows[i].ForeColor = DefaultForeColor;
-                    }
+                    this.DataRows[i].BackColor = this.SelectionBackColor;
+                    this.DataRows[i].ForeColor = this.SelectionForeColor;
+                }
+                else
+                {
+                    this.DataRows[i].BackColor = this.DefaultBackColor;
+                    this.DataRows[i].ForeColor = this.DefaultForeColor;
                 }
             }
         }
@@ -337,6 +361,8 @@ namespace kSlovnik.Controls
                         var i = cell.Index;
                         var data = this.Columns[i].PropertyName != null && item != null ? typeof(T).GetProperty(this.Columns[i].PropertyName)?.GetValue(item) : null;
                         cell.Value = this.Columns[i].ShowValue(item, data) == true ? data : null;
+                        cell.TextAlign = cell.DefaultContentAlign;
+                        cell.ImageAlign = cell.DefaultContentAlign;
                     }
                 }
 
@@ -346,14 +372,32 @@ namespace kSlovnik.Controls
                 }
             }
 
-            public void SetItem(object[] values)
+            public void SetItem(object[] values, ContentAlignment?[] overrideAlignments = null)
             {
                 foreach (var control in this.Controls)
                 {
                     if (control is Cell cell)
                     {
                         var i = cell.Index;
-                        cell.Value = values.Length > i ? values[i] : null;
+                        if (values.Length > i)
+                        {
+                            cell.Value = values[i];
+
+                            if (overrideAlignments != null && overrideAlignments.Length > i && overrideAlignments[i] != null)
+                            {
+                                cell.TextAlign = overrideAlignments[i].Value;
+                                cell.ImageAlign = overrideAlignments[i].Value;
+                            }
+                            else
+                            {
+                                cell.TextAlign = cell.DefaultContentAlign;
+                                cell.ImageAlign = cell.DefaultContentAlign;
+                            }
+                        }
+                        else
+                        {
+                            cell.Value = null;
+                        }
                     }
                 }
             }
@@ -373,7 +417,7 @@ namespace kSlovnik.Controls
             /// <param name="widthPercent">Percent of the row width.</param>
             /// <param name="data">The data to display in the cell.</param>
             /// <returns>The new cell</returns>
-            private Control CreateCell(int index, int offsetX, int widthPercent, ContentAlignment textAlign, object data)
+            private Control CreateCell(int index, int offsetX, int widthPercent, ContentAlignment contentAlign, object data)
             {
                 var cell = new Cell
                 {
@@ -381,8 +425,9 @@ namespace kSlovnik.Controls
                     Location = new Point(offsetX, 0),
                     Width = this.Width * widthPercent / 100,
                     Height = this.Height,
-                    TextAlign = textAlign,
-                    ImageAlign = textAlign,
+                    TextAlign = contentAlign,
+                    ImageAlign = contentAlign,
+                    DefaultContentAlign = contentAlign,
                     Value = data
                 };
 
@@ -397,6 +442,8 @@ namespace kSlovnik.Controls
             private bool hasClickEvent = false;
 
             public int Index { get; set; }
+
+            public ContentAlignment DefaultContentAlign { get; set; }
 
             public object Value
             {
