@@ -119,6 +119,9 @@ namespace kSlovnik.Sidebar
             var dictionarySubButton = new MenuDropDownItem("Речник", enabled: true);
             dictionarySubButton.Click += DictionarySubButton_Click;
             gameButton.DropDownItems.Add(dictionarySubButton);
+            /*var processWordsSubButton = new MenuDropDownItem("Валидация на думи", enabled: true);
+            processWordsSubButton.Click += (sender, args) => { WordController.ProcessPendingWords(); };
+            gameButton.DropDownItems.Add(processWordsSubButton);*/
             gameButton.DropDownItems.Add(new MenuDropDownItem("Трудност", withSeparator: true, enabled: false));
             gameButton.DropDownItems.Add(new MenuDropDownItem("Изглед", enabled: false));
             var soundsSubButton = new MenuDropDownItem("Звуци", isToggled: UserSettings.SoundsOn, enabled: true);
@@ -339,7 +342,7 @@ namespace kSlovnik.Sidebar
                     row.ForeColor = word.IsValid ? Constants.Colors.FontBlue : Constants.Colors.FontRed;
                 }
             });
-            Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.IsValid), null, 10, ContentAlignment.MiddleCenter));
+            Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.IsValid), null, 10, ContentAlignment.MiddleCenter, new Func<Word, object, bool>((word, data) => word != null ? word.IsValid : false)));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.Text), "Думи", 55, ContentAlignment.MiddleLeft));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.Points), "Точки", 25, ContentAlignment.MiddleRight));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(null, null, 10, ContentAlignment.MiddleRight));

@@ -86,7 +86,7 @@ namespace kSlovnik
             }
             else
             {
-                GameController.NewGame();
+                GameController.NewGame(contentContainer);
                 SidebarController.RenderSidebar();
             }
         }

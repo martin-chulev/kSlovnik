@@ -12,12 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Resources\Words\ExtraWords.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Resources\Sounds\" />
     <Folder Include="Resources\Images\Tiles\" />
+    <Folder Include="Resources\Words\Processed\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -584,6 +581,24 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Resources\Words\BaseWords.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\Words\Base\Accepted.txt">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\Words\Base\Approved.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\Words\Base\InvalidCharacters.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\Words\Base\InvalidLength.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\Words\Base\InvalidMisc.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\Words\Base\Pending.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Resources\Words\DefaultForm.txt">

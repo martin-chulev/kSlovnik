@@ -15,7 +15,7 @@ namespace kSlovnik.Game
 {
     public static class GameController
     {
-        public static void NewGame()
+        public static void NewGame(Panel contentContainer = null)
         {
             Game.Current = new Game() { Id = DateTime.Now.ToString("yyyyMMddHHmmss") };
 
@@ -30,7 +30,7 @@ namespace kSlovnik.Game
             HandController.ReturnAllToHand(changeVisualPosition: true);
             HandController.LoadHand(Game.Current.CurrentPlayer);
             HandController.SaveHand(Game.Current.CurrentPlayer);
-            BoardController.LoadBoard(Program.MainView.Controls.Find("content", true).First());
+            BoardController.LoadBoard(contentContainer ?? Program.MainView.Controls.Find("content", true).First());
         }
 
         public static async Task ContinueFromLoadedTurn()

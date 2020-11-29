@@ -48,6 +48,7 @@ namespace kSlovnik
             public static readonly Color FontBlack = Color.FromArgb(0, 0, 0);
             public static readonly Color FontBlue = Color.FromArgb(0, 0, 190);
             public static readonly Color FontRed = Color.FromArgb(190, 0, 0);
+            public static readonly Color FontGreen = Color.FromArgb(0, 190, 0);
         }
 
         public enum GameEndReason
@@ -88,7 +89,7 @@ namespace kSlovnik
         {
             public static readonly Font Default = new Font("Microsoft Sans Serif", 11, FontStyle.Regular);
             public static readonly Font ScoreboardGrid = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
-            public static readonly Font TurnPointsLabel = new Font("Microsoft Sans Serif", 10, FontStyle.Bold);
+            public static readonly Font TurnPointsLabel = new Font("Microsoft Sans Serif", 9, FontStyle.Bold);
             public static readonly Font WordsGrid = new Font("Microsoft Sans Serif", 10, FontStyle.Regular);
         }
 

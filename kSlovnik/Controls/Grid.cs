@@ -12,8 +12,6 @@ namespace kSlovnik.Controls
 {
     public class Grid<T> : Panel
     {
-        private int currentPage = 0;
-
         private List<T> dataSource;
         public List<T> DataSource
         {
@@ -24,11 +22,13 @@ namespace kSlovnik.Controls
             set
             {
                 dataSource = value ?? new List<T>();
-                RefreshData();
+                RefreshData(0);
                 SelectedIndex = null;
                 UpdateSelectionHighlight();
             }
         }
+
+        public int CurrentPage { get; private set; } = 0;
 
         public bool IsClickable { get; private set; }
 
@@ -145,15 +145,20 @@ namespace kSlovnik.Controls
 
         public void NextPage()
         {
-            RefreshData(this.currentPage+1);
+            RefreshData(this.CurrentPage+1);
         }
 
         public void PreviousPage()
         {
-            RefreshData(this.currentPage-1);
+            RefreshData(this.CurrentPage-1);
         }
 
-        private void RefreshData(int page = 0)
+        public void RefreshData()
+        {
+            RefreshData(this.CurrentPage);
+        }
+
+        private void RefreshData(int page)
         {
             if (this.IsInitialized == false) throw new Exception($"Grid hasn't been initialized yet. Call {nameof(Init)} first.");
 
@@ -168,15 +173,15 @@ namespace kSlovnik.Controls
 
             if (page >= pageCount)
             {
-                this.currentPage = 0;
+                this.CurrentPage = 0;
             }
             else if (page < 0)
             {
-                this.currentPage = pageCount - 1;
+                this.CurrentPage = pageCount - 1;
             }
             else
             {
-                this.currentPage = page;
+                this.CurrentPage = page;
             }
 
             var dataRowCount = this.DataRows.Count;
@@ -184,7 +189,7 @@ namespace kSlovnik.Controls
 
             if (this.dataSource.Count > 0)
             {
-                var startIndex = dataRowCount * this.currentPage;
+                var startIndex = dataRowCount * this.CurrentPage;
                 var endIndex = startIndex + Math.Min(dataRowCount, this.dataSource.Count - startIndex) - 1;
                 for (int i = 0; i < dataRowCount; i++)
                 {
@@ -202,22 +207,22 @@ namespace kSlovnik.Controls
 
                     if (cellValues.Length > 0)
                     {
-                        if (this.currentPage > 0)
+                        if (this.CurrentPage > 0)
                         {
                             var leftArrow = new Button() { Text = "⮜" /*Image = ImageController.LetterImagesActive['х']*/ };
-                            leftArrow.Click += (sender, args) => RefreshData(this.currentPage - 1);
+                            leftArrow.Click += (sender, args) => RefreshData(this.CurrentPage - 1);
                             cellValues[0] = leftArrow;
                             contentAlignments[0] = ContentAlignment.MiddleCenter;
                         }
 
                         var centerIndex = Math.Max(0, cellValues.Length / 2 - (1 - cellValues.Length % 2));
-                        cellValues[centerIndex] = $"страница {this.currentPage + 1} от {pageCount}";
+                        cellValues[centerIndex] = $"страница {this.CurrentPage + 1} от {pageCount}";
                         contentAlignments[centerIndex] = ContentAlignment.MiddleCenter;
 
-                        if (this.currentPage < pageCount - 1)
+                        if (this.CurrentPage < pageCount - 1)
                         {
                             var rightArrow = new Button() { Text = "⮞" /*Image = ImageController.LetterImagesActive['а']*/ };
-                            rightArrow.Click += (sender, args) => RefreshData(this.currentPage + 1);
+                            rightArrow.Click += (sender, args) => RefreshData(this.CurrentPage + 1);
                             cellValues[cellValues.Length - 1] = rightArrow;
                             contentAlignments[cellValues.Length - 1] = ContentAlignment.MiddleCenter;
                         }
@@ -249,6 +254,7 @@ namespace kSlovnik.Controls
                     this.DataRows[i].BackColor = this.DefaultBackColor;
                     this.DataRows[i].ForeColor = this.DefaultForeColor;
                 }
+                this.OnStylesApplied(this.DataRows[i], this.DataRows[i].Item);
             }
         }
 
@@ -339,7 +345,7 @@ namespace kSlovnik.Controls
             {
                 if (this.Parent is Grid<T> grid && grid.IsClickable)
                 {
-                    grid.SelectedIndex = this.Item != null && this.Item.Equals(default(T)) == false ?
+                    grid.SelectedIndex = grid.SelectedIndex != this.RowIndex && this.Item != null && this.Item.Equals(default(T)) == false ?
                                          this.RowIndex :
                                          null;
                 }
@@ -493,7 +499,7 @@ namespace kSlovnik.Controls
                             this.Text = value switch
                             {
                                 true => "✓",
-                                false => value is Word ? "✗" : null,
+                                false => "✗",
                                 _ => value?.ToString()
                             };
                             this.Image = null;
@@ -516,7 +522,7 @@ namespace kSlovnik.Controls
                                 this.Text = value switch
                                 {
                                     true => "✓",
-                                    false => value is Word ? "✗" : null,
+                                    false => "✗",
                                     _ => value?.ToString()
                                 };
                                 this.Image = null;

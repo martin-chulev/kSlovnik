@@ -22,8 +22,10 @@ namespace kSlovnik.Controls
             var aspectRatio = (double)Program.MainView.ClientSize.Width / Program.MainView.ClientSize.Height;
             Form prompt = new Form()
             {
+                Text = "Зареждане на запазена игра",
                 Width = promptWidth,
                 Height = promptHeight,
+                MinimizeBox = false,
                 MaximizeBox = false,
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 StartPosition = FormStartPosition.CenterParent
