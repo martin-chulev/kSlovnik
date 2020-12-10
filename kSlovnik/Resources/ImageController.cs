@@ -10,8 +10,11 @@ namespace kSlovnik.Resources
 {
     public static class ImageController
     {
-        public const string LettersFolderPath = @"Resources\Images\Letters";
-        public const string TilesFolderPath = @"Resources\Images\Tiles";
+        public const string ResourcesFolderPath = @"Resources";
+        public const string ImagesFolderPath = ResourcesFolderPath + @"\Images";
+
+        public const string LettersFolderPath = ImagesFolderPath + @"\Letters";
+        public const string TilesFolderPath = ImagesFolderPath + @"\Tiles";
 
         public static Dictionary<char, Image> LetterImagesActive = new Dictionary<char, Image>();
         public static Dictionary<char, Image> LetterImagesInactive = new Dictionary<char, Image>();
@@ -21,6 +24,8 @@ namespace kSlovnik.Resources
 
         public static Image MenuItemToggleOnImage = CreateImage(Color.Transparent, 30, 30, Color.Transparent, text: "✓", font: new Font(Constants.Fonts.Default, FontStyle.Bold), fontColor: Color.Black);
         public static Image MenuItemToggleOffImage = CreateImage(Color.Transparent, 30, 30, Color.Transparent);
+
+        public static Image LoadingScreenImage = Image.FromFile(Path.Combine(ImagesFolderPath, "loading.jpg"));
 
         public static void LoadImages()
         {
@@ -68,6 +73,8 @@ namespace kSlovnik.Resources
             {
                 TileImages.Add(Path.GetFileNameWithoutExtension(tileImagePath), Image.FromFile(tileImagePath).ToSize(Board.Board.SlotSize - Board.Board.SlotBorderSize));
             }
+
+            LoadingScreenImage = Image.FromFile(Path.Combine(ImagesFolderPath, "loading.jpg"));
         }
 
         /// <summary>

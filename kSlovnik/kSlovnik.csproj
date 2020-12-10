@@ -532,6 +532,9 @@
     <None Update="Resources\Images\Letters\Inactive\я.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Resources\Images\loading.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Resources\Images\Tiles\Center.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
