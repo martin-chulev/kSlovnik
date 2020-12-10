@@ -92,16 +92,13 @@ namespace kSlovnik.Resources
 
         public static void AddWord(DictionaryWord word)
         {
-            if (PendingWords.Add(word))
-                File.WriteAllText(ProcessedPendingPath, JsonSerializer.Serialize(PendingWords, new JsonSerializerOptions { WriteIndented = true }));
+            PendingWords.Add(word);
         }
 
         public static void Approve(this DictionaryWord word)
         {
             RemoveWord(word);
             ApprovedWords.Add(word);
-            File.WriteAllText(ProcessedApprovedPath, JsonSerializer.Serialize(ApprovedWords, new JsonSerializerOptions { WriteIndented = true }));
-            LoadWords();
             word.IsApproved = true;
         }
 
@@ -109,8 +106,6 @@ namespace kSlovnik.Resources
         {
             RemoveWord(word);
             InvalidMiscWords.Add(word);
-            File.WriteAllText(ProcessedInvalidMiscPath, JsonSerializer.Serialize(InvalidMiscWords, new JsonSerializerOptions { WriteIndented = true }));
-            LoadWords();
             word.IsApproved = false;
         }
 
@@ -118,27 +113,26 @@ namespace kSlovnik.Resources
         {
             RemoveWord(word);
             PendingWords.Add(word);
-            File.WriteAllText(ProcessedPendingPath, JsonSerializer.Serialize(PendingWords, new JsonSerializerOptions { WriteIndented = true }));
-            LoadWords();
             word.IsApproved = null;
         }
 
-        private static void RemoveWord(DictionaryWord word)
+        private static bool RemoveWord(DictionaryWord word)
         {
-            if (PendingWords.Remove(word))
-                File.WriteAllText(ProcessedPendingPath, JsonSerializer.Serialize(PendingWords, new JsonSerializerOptions { WriteIndented = true }));
+            bool removed = PendingWords.Remove(word);
+            removed |= InvalidLengthWords.Remove(word);
+            removed |= InvalidCharactersWords.Remove(word);
+            removed |= InvalidMiscWords.Remove(word);
+            removed |= ApprovedWords.Remove(word);
+            return removed;
+        }
 
-            if (InvalidLengthWords.Remove(word))
-                File.WriteAllText(ProcessedInvalidLengthPath, JsonSerializer.Serialize(InvalidLengthWords, new JsonSerializerOptions { WriteIndented = true }));
-
-            if (InvalidCharactersWords.Remove(word))
-                File.WriteAllText(ProcessedInvalidCharactersPath, JsonSerializer.Serialize(InvalidCharactersWords, new JsonSerializerOptions { WriteIndented = true }));
-
-            if (InvalidMiscWords.Remove(word))
-                File.WriteAllText(ProcessedInvalidMiscPath, JsonSerializer.Serialize(InvalidMiscWords, new JsonSerializerOptions { WriteIndented = true }));
-
-            if (ApprovedWords.Remove(word))
-                File.WriteAllText(ProcessedApprovedPath, JsonSerializer.Serialize(ApprovedWords, new JsonSerializerOptions { WriteIndented = true }));
+        public static void SaveWords()
+        {
+            File.WriteAllText(ProcessedPendingPath, JsonSerializer.Serialize(PendingWords, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(ProcessedInvalidLengthPath, JsonSerializer.Serialize(InvalidLengthWords, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(ProcessedInvalidCharactersPath, JsonSerializer.Serialize(InvalidCharactersWords, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(ProcessedInvalidMiscPath, JsonSerializer.Serialize(InvalidMiscWords, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(ProcessedApprovedPath, JsonSerializer.Serialize(ApprovedWords, new JsonSerializerOptions { WriteIndented = true }));
         }
 
         public static bool WordExists(string word)

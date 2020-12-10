@@ -41,6 +41,8 @@ namespace kSlovnik.Windows
 
         private ToolTip ToolTip = new ToolTip();
 
+        private bool wordsModified = false;
+
         public DictionaryEditor(Form parent)
         {
             InitializeComponent();
@@ -140,7 +142,8 @@ namespace kSlovnik.Windows
                 Enabled = false
             };
             this.ButtonApprove.Click += (sender, args) =>
-            { 
+            {
+                this.wordsModified = true;
                 this.WordList.SelectedItem.Approve();
                 this.WordList.RefreshData();
             };
@@ -158,6 +161,7 @@ namespace kSlovnik.Windows
             };
             this.ButtonReject.Click += (sender, args) =>
             {
+                this.wordsModified = true;
                 this.WordList.SelectedItem.Reject();
                 this.WordList.RefreshData();
             };
@@ -175,6 +179,7 @@ namespace kSlovnik.Windows
             };
             this.ButtonSetPending.Click += (sender, args) =>
             {
+                this.wordsModified = true;
                 this.WordList.SelectedItem.SetAsPending();
                 this.WordList.RefreshData();
             };
@@ -366,6 +371,7 @@ namespace kSlovnik.Windows
             var wordAdded = prompt.ShowDialog() == DialogResult.OK;
             if (wordAdded)
             {
+                this.wordsModified = true;
                 this.WordList.RefreshData();
             }
         }
@@ -376,6 +382,7 @@ namespace kSlovnik.Windows
             var wordModified = prompt.ShowDialog() == DialogResult.OK;
             if (wordModified)
             {
+                this.wordsModified = true;
                 this.WordList.RefreshData();
             }
         }
@@ -529,14 +536,14 @@ namespace kSlovnik.Windows
                     this.SimilarWordsList.DataSource = includedWords.Where(w => w.FullWord.Equals(this.WordList.SelectedItem.FullWord) == false &&
                                                                                 w.FullWord.Contains(this.WordList.SelectedItem.Root)).ToList();
 
-                    this.WordLabel.Text = this.WordList.SelectedItem.FullWordWithMarks;
+                    this.WordLabel.Invoke((MethodInvoker)delegate { this.WordLabel.Text = this.WordList.SelectedItem.FullWordWithMarks; });
                     ToggleButtons(true);
                 }
                 else
                 {
                     this.SameRootList.DataSource = null;
                     this.SimilarWordsList.DataSource = null;
-                    this.WordLabel.Text = null;
+                    this.WordLabel.Invoke((MethodInvoker)delegate { this.WordLabel.Text = null; });
                     ToggleButtons(false);
                 }
             }
@@ -550,6 +557,27 @@ namespace kSlovnik.Windows
             if (ButtonApprove != null) ButtonApprove.Enabled = enabled;
             if (ButtonReject != null) ButtonReject.Enabled = enabled;
             if (ButtonSetPending != null) ButtonSetPending.Enabled = enabled;
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (this.wordsModified == true)
+            {
+                var saveConfirmation = MessageBox.Show("Запазване на промените?", "Запазване?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.None, MessageBoxDefaultButton.Button3);
+                if (saveConfirmation == DialogResult.Yes)
+                {
+                    WordController.SaveWords();
+                }
+                else if (saveConfirmation == DialogResult.No)
+                {
+                    WordController.LoadWords();
+                }
+                else if (saveConfirmation == DialogResult.Cancel)
+                {
+                    e.Cancel = true;
+                }
+            }
+            base.OnFormClosing(e);
         }
     }
 }
