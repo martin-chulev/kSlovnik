@@ -244,5 +244,14 @@ namespace kSlovnik
                 }
             }
         }
+
+        public static Queue<int> CreateShuffledQueue(int start, int end)
+        {
+            var numberList = new List<int>();
+            for (int number = start; number < end; number++)
+                numberList.Add(number);
+
+            return new Queue<int>(numberList.Shuffle());
+        }
     }
 }

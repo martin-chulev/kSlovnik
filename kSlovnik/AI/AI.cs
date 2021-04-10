@@ -17,6 +17,14 @@ namespace kSlovnik.AI
 {
     public class AI
     {
+        public enum AIAlgorithm
+        {
+            Basic,
+            FirstFound
+        }
+
+        public AIAlgorithm Algorithm { get; set; } = AIAlgorithm.FirstFound;
+
         public Difficulty Difficulty { get; set; }
 
         public AI(Difficulty difficulty = Difficulty.Medium)
@@ -26,13 +34,175 @@ namespace kSlovnik.AI
 
         public async void PlayTurn()
         {
-            var availableWords = GetAvailableWords();
-            FindPlayableWord(availableWords);
+            if (Algorithm == AIAlgorithm.Basic)
+            {
+                var availableWords = GetAvailableWords();
+                FindPlayableWord(availableWords);
+            }
+            else if (Algorithm == AIAlgorithm.FirstFound)
+            {
+                GetFirstAvailableWord();
+            }
+
             await GameController.EndTurn();
         }
 
         private List<PotentialWord> GetAvailableWords()
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            var result = new List<PotentialWord>();
+
+            // Get hand
+            var hand = HandController.HandSlots.Where(s => s.IsFilled).Select(s => s.Letter).ToList();
+
+            MessageBox.Show("hand " + sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            var handLetters = hand.Where(s => s != '~').Select(l => l.ToString().ToUpperInvariant()[0]).ToList();
+
+            MessageBox.Show("handLetters " + sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            var handGreyCount = hand.Count - handLetters.Count;
+
+            // If center piece is not placed, find a word from hand only and place it in the center of the board
+            if (Board.Board.CenterSlot.IsFilled == false)
+            {
+                // TODO: Implement search in dictionary from hand only and return that list of words
+                return result;
+            }
+
+            // Get board
+            var boardRows = new List<string>();
+            for (int row = 0; row < Board.Board.Rows; row++)
+            {
+                string rowStr = string.Empty;
+                for (int column = 0; column < Board.Board.Columns; column++)
+                {
+                    rowStr += Board.Board.Slots[row, column].CurrentLetter;
+                }
+                boardRows.Add(rowStr);
+            }
+
+            MessageBox.Show("boardRows " + sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            var boardColumns = new List<string>();
+            for (int column = 0; column < Board.Board.Columns; column++)
+            {
+                string columnStr = string.Empty;
+                for (int row = 0; row < Board.Board.Rows; row++)
+                {
+                    columnStr += Board.Board.Slots[row, column].CurrentLetter;
+                }
+                boardColumns.Add(columnStr);
+            }
+
+            MessageBox.Show("boardColumns " + sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            // Get row patterns
+            for (int row = 0; row < boardRows.Count; row++)
+            {
+                var boardRow = boardRows[row];
+
+                var options = new List<PotentialWord>();
+                for (int i = 0; i < boardRow.Length; i++)
+                {
+                    if (i > 0 && boardRow[i - 1] != '\0') // If there is a letter on the left
+                        continue;
+
+                    for (int j = i; j < boardRow.Length; j++)
+                    {
+                        if (j < (boardRow.Length - 1) && boardRow[j + 1] != '\0') // If there is a letter on the right
+                            continue;
+
+                        var option = boardRow.Substring(i, j - i + 1);
+
+                        if (option.Length > 1 && option.Any(c => c == '\0') && option.Any(c => c != '\0') && option.Count(c => c == '\0') <= hand.Count) {
+                            options.Add(new PotentialWord(option.ToUpperInvariant(), row, i, isVertical: false));
+                        }
+                    }
+                }
+
+                var letterPattern = handGreyCount > 0 ? "." : $"[{string.Join(null, handLetters)}]";
+                foreach (var potentialWord in options)
+                {
+                    var option = potentialWord.Text;
+                    var pattern = $"^{option.Replace("\0", letterPattern).ToUpperInvariant()}$";
+                    var matches = WordController.WordsByLength[option.Length].Where(word => Regex.IsMatch(word, pattern));
+                    result.AddRange(GetFilteredMatches(potentialWord, matches, handLetters, handGreyCount));
+                }
+            }
+
+            MessageBox.Show("rowPatterns " + sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            // Get column patterns
+            for (int col = 0; col < boardColumns.Count; col++)
+            {
+                var boardColumn = boardColumns[col];
+
+                var options = new List<PotentialWord>();
+                for (int i = 0; i < boardColumn.Length; i++)
+                {
+                    if (i > 0 && boardColumn[i - 1] != '\0') // If there is a letter above
+                        continue;
+
+                    for (int j = i; j < boardColumn.Length; j++)
+                    {
+                        if (j < (boardColumn.Length - 1) && boardColumn[j + 1] != '\0') // If there is a letter below
+                            continue;
+
+                        var option = boardColumn.Substring(i, j - i + 1);
+
+                        if (option.Length > 1 && option.Any(c => c == '\0') && option.Any(c => c != '\0') && option.Count(c => c == '\0') <= hand.Count)
+                        {
+                            options.Add(new PotentialWord(option.ToUpperInvariant(), i, col, isVertical: true));
+                        }
+                    }
+                }
+
+                var letterPattern = handGreyCount > 0 ? "." : $"[{string.Join(null, handLetters)}]";
+                foreach (var potentialWord in options)
+                {
+                    var option = potentialWord.Text;
+                    var pattern = $"^{option.Replace("\0", letterPattern).ToUpperInvariant()}$";
+                    var matches = WordController.WordsByLength[option.Length].Where(word => Regex.IsMatch(word, pattern));
+                    result.AddRange(GetFilteredMatches(potentialWord, matches, handLetters, handGreyCount));
+                }
+            }
+
+            MessageBox.Show("columnPatterns " + sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            // if center piece placed:
+            // get each row and column from board "  б а          "
+            // split into different options (with at least 1 filled and at least 1 empty)
+            // regex match dictionary for each pattern
+            // filter results by subtracting letters from hand and checking if <= number of grey pieces in hand
+            // remember start index of pattern on board in case a word is chosen for it
+
+            /*var patternBuilder = new StringBuilder();
+            patternBuilder.Append("^");
+            patternBuilder.Append("")
+            patternBuilder.Append("$")
+
+            string regexPattern = @"^(?!.*o.*o)(?!.*a.*a)(?!.*e.*e.*e)(?!.*s.*s)d[oaes]{2}r[oaes]{0,3}$";
+            Regex regex = new Regex(regexPattern);*/
+            //WordController.Words.Where(w => )
+
+            //MessageBox.Show($"Found {result.Count} words\nin {sw.Elapsed}");
+            return result;
+        }
+
+        private List<PotentialWord> GetFirstAvailableWord(bool random = true)
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             var result = new List<PotentialWord>();
 
             // Get hand
@@ -70,53 +240,89 @@ namespace kSlovnik.AI
                 boardColumns.Add(columnStr);
             }
 
+            var rowIndexesQueue = Util.CreateShuffledQueue(0, boardRows.Count);
+
             // Get row patterns
-            for (int row = 0; row < boardRows.Count; row++)
+            while (rowIndexesQueue.Count > 0)
             {
+                var row = rowIndexesQueue.Dequeue();
+
                 var boardRow = boardRows[row];
 
+                var rowColIndexesQueue = Util.CreateShuffledQueue(0, boardRow.Length);
+
                 var options = new List<PotentialWord>();
-                for (int i = 0; i < boardRow.Length; i++)
+                while (rowColIndexesQueue.Count > 0)
                 {
+                    var i = rowColIndexesQueue.Dequeue();
+
                     if (i > 0 && boardRow[i - 1] != '\0') // If there is a letter on the left
                         continue;
 
-                    for (int j = i; j < boardRow.Length; j++)
+                    var lengthQueue = Util.CreateShuffledQueue(i, boardRow.Length);
+
+                    while (lengthQueue.Count > 0)
                     {
+                        var j = lengthQueue.Dequeue();
+
                         if (j < (boardRow.Length - 1) && boardRow[j + 1] != '\0') // If there is a letter on the right
                             continue;
 
                         var option = boardRow.Substring(i, j - i + 1);
 
-                        if (option.Length > 1 && option.Any(c => c == '\0') && option.Any(c => c != '\0') && option.Count(c => c == '\0') <= hand.Count) {
+                        if (option.Length > 1 && option.Any(c => c == '\0') && option.Any(c => c != '\0') && option.Count(c => c == '\0') <= hand.Count)
+                        {
+                            options.Clear();
                             options.Add(new PotentialWord(option.ToUpperInvariant(), row, i, isVertical: false));
+                            var letterPattern = handGreyCount > 0 ? "." : $"[{string.Join(null, handLetters)}]";
+                            foreach (var potentialWord in options)
+                            {
+                                var potentialWordText = potentialWord.Text;
+                                var pattern = $"^{potentialWordText.Replace("\0", letterPattern).ToUpperInvariant()}$";
+                                var matches = WordController.WordsByLength[potentialWordText.Length].Where(word => Regex.IsMatch(word, pattern));
+                                result.AddRange(GetFilteredMatches(potentialWord, matches, handLetters, handGreyCount));
+                            }
+
+                            if (result.Count > 0)
+                            {
+                                if (FindPlayableWord(result))
+                                    return result;
+
+                                result.Clear();
+                            }
                         }
                     }
                 }
-
-                var letterPattern = handGreyCount > 0 ? "." : $"[{string.Join(null, handLetters)}]";
-                foreach (var potentialWord in options)
-                {
-                    var option = potentialWord.Text;
-                    var pattern = $"^{option.Replace("\0", letterPattern).ToUpperInvariant()}$";
-                    var matches = WordController.WordsByLength[option.Length].Where(word => Regex.IsMatch(word, pattern));
-                    result.AddRange(GetFilteredMatches(potentialWord, matches, handLetters, handGreyCount));
-                }
             }
 
+            MessageBox.Show("NEW rowPatterns " + sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            var colIndexesQueue = Util.CreateShuffledQueue(0, boardColumns.Count);
+
             // Get column patterns
-            for (int col = 0; col < boardColumns.Count; col++)
+            while (colIndexesQueue.Count > 0)
             {
+                var col = colIndexesQueue.Dequeue();
+
                 var boardColumn = boardColumns[col];
 
+                var colRowIndexesQueue = Util.CreateShuffledQueue(0, boardColumn.Length);
+
                 var options = new List<PotentialWord>();
-                for (int i = 0; i < boardColumn.Length; i++)
+                while (colRowIndexesQueue.Count > 0)
                 {
+                    var i = colRowIndexesQueue.Dequeue();
+
                     if (i > 0 && boardColumn[i - 1] != '\0') // If there is a letter above
                         continue;
+                    
+                    var lengthQueue = Util.CreateShuffledQueue(i, boardColumn.Length);
 
-                    for (int j = i; j < boardColumn.Length; j++)
+                    while (lengthQueue.Count > 0)
                     {
+                        var j = lengthQueue.Dequeue();
+
                         if (j < (boardColumn.Length - 1) && boardColumn[j + 1] != '\0') // If there is a letter below
                             continue;
 
@@ -124,20 +330,31 @@ namespace kSlovnik.AI
 
                         if (option.Length > 1 && option.Any(c => c == '\0') && option.Any(c => c != '\0') && option.Count(c => c == '\0') <= hand.Count)
                         {
+                            options.Clear();
                             options.Add(new PotentialWord(option.ToUpperInvariant(), i, col, isVertical: true));
+                            var letterPattern = handGreyCount > 0 ? "." : $"[{string.Join(null, handLetters)}]";
+                            foreach (var potentialWord in options)
+                            {
+                                var potentialWordText = potentialWord.Text;
+                                var pattern = $"^{potentialWordText.Replace("\0", letterPattern).ToUpperInvariant()}$";
+                                var matches = WordController.WordsByLength[potentialWordText.Length].Where(word => Regex.IsMatch(word, pattern));
+                                result.AddRange(GetFilteredMatches(potentialWord, matches, handLetters, handGreyCount));
+                            }
+
+                            if (result.Count > 0)
+                            {
+                                if (FindPlayableWord(result))
+                                    return result;
+
+                                result.Clear();
+                            }
                         }
                     }
                 }
-
-                var letterPattern = handGreyCount > 0 ? "." : $"[{string.Join(null, handLetters)}]";
-                foreach (var potentialWord in options)
-                {
-                    var option = potentialWord.Text;
-                    var pattern = $"^{option.Replace("\0", letterPattern).ToUpperInvariant()}$";
-                    var matches = WordController.WordsByLength[option.Length].Where(word => Regex.IsMatch(word, pattern));
-                    result.AddRange(GetFilteredMatches(potentialWord, matches, handLetters, handGreyCount));
-                }
             }
+
+            MessageBox.Show("columnPatterns " + sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
 
             // if center piece placed:
             // get each row and column from board "  б а          "
@@ -154,7 +371,7 @@ namespace kSlovnik.AI
             string regexPattern = @"^(?!.*o.*o)(?!.*a.*a)(?!.*e.*e.*e)(?!.*s.*s)d[oaes]{2}r[oaes]{0,3}$";
             Regex regex = new Regex(regexPattern);*/
             //WordController.Words.Where(w => )
-            
+
             //MessageBox.Show($"Found {result.Count} words\nin {sw.Elapsed}");
             return result;
         }
