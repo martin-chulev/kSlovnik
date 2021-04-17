@@ -57,13 +57,7 @@ namespace kSlovnik.AI
             // Get hand
             var hand = HandController.HandSlots.Where(s => s.IsFilled).Select(s => s.Letter).ToList();
 
-            MessageBox.Show("hand " + sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
-
             var handLetters = hand.Where(s => s != '~').Select(l => l.ToString().ToUpperInvariant()[0]).ToList();
-
-            MessageBox.Show("handLetters " + sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
 
             var handGreyCount = hand.Count - handLetters.Count;
 
@@ -86,9 +80,6 @@ namespace kSlovnik.AI
                 boardRows.Add(rowStr);
             }
 
-            MessageBox.Show("boardRows " + sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
-
             var boardColumns = new List<string>();
             for (int column = 0; column < Board.Board.Columns; column++)
             {
@@ -99,9 +90,6 @@ namespace kSlovnik.AI
                 }
                 boardColumns.Add(columnStr);
             }
-
-            MessageBox.Show("boardColumns " + sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
 
             // Get row patterns
             for (int row = 0; row < boardRows.Count; row++)
@@ -137,9 +125,6 @@ namespace kSlovnik.AI
                 }
             }
 
-            MessageBox.Show("rowPatterns " + sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
-
             // Get column patterns
             for (int col = 0; col < boardColumns.Count; col++)
             {
@@ -174,9 +159,6 @@ namespace kSlovnik.AI
                     result.AddRange(GetFilteredMatches(potentialWord, matches, handLetters, handGreyCount));
                 }
             }
-
-            MessageBox.Show("columnPatterns " + sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
 
             // if center piece placed:
             // get each row and column from board "  б а          "
@@ -295,9 +277,6 @@ namespace kSlovnik.AI
                 }
             }
 
-            MessageBox.Show("NEW rowPatterns " + sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
-
             var colIndexesQueue = Util.CreateShuffledQueue(0, boardColumns.Count);
 
             // Get column patterns
@@ -352,9 +331,6 @@ namespace kSlovnik.AI
                     }
                 }
             }
-
-            MessageBox.Show("columnPatterns " + sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
 
             // if center piece placed:
             // get each row and column from board "  б а          "

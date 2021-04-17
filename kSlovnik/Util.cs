@@ -164,10 +164,6 @@ namespace kSlovnik
             //Creating a new Bitmap object
             Bitmap captureBitmap = new Bitmap(form.Width - 16, form.Height - 8, PixelFormat.Format32bppArgb);
 
-            //Creating a Rectangle object which will  
-            //capture our Current Screen
-            Rectangle captureRectangle = Screen.FromControl(form).Bounds;
-
             //Creating a New Graphics Object
             Graphics captureGraphics = Graphics.FromImage(captureBitmap);
 
@@ -191,10 +187,6 @@ namespace kSlovnik
         {
             //Creating a new Bitmap object
             Bitmap captureBitmap = new Bitmap(form.Width - 16, form.Height - 8, PixelFormat.Format32bppArgb);
-
-            //Creating a Rectangle object which will  
-            //capture our Current Screen
-            Rectangle captureRectangle = Screen.FromControl(form).Bounds;
 
             //Creating a New Graphics Object
             Graphics captureGraphics = Graphics.FromImage(captureBitmap);
