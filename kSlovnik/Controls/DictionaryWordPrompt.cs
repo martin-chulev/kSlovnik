@@ -21,7 +21,7 @@ namespace kSlovnik.Controls
         public TextBox DefiniteArticleTextBox;
         public Label FullWordLabel;
 
-        public DictionaryWordPrompt(DictionaryWord word = null)
+        public DictionaryWordPrompt(DictionaryWord word = null, bool advanced = true)
         {
             this.Word = word ?? new DictionaryWord();
             this.originalWord = this.Word.FullWord;
@@ -34,8 +34,10 @@ namespace kSlovnik.Controls
                 Top = Constants.Padding.Top / 2,
                 Left = Constants.Padding.Left / 2,
                 TextAlign = HorizontalAlignment.Right,
-                PlaceholderText = "представки"
+                PlaceholderText = "представки",
+                Visible = advanced,
             };
+            if (!advanced) this.PrefixTextBox.Width = 0;
             this.PrefixTextBox.Width = (int)(this.PrefixTextBox.Width * 1.5);
             this.PrefixTextBox.TextChanged += (sender, args) =>
             {
@@ -48,10 +50,11 @@ namespace kSlovnik.Controls
             {
                 Text = this.Word.Root,
                 Top = this.PrefixTextBox.Top,
-                Left = this.PrefixTextBox.Right,
+                Left = advanced ? this.PrefixTextBox.Right : Constants.Padding.Left / 2,
                 TextAlign = HorizontalAlignment.Center,
-                PlaceholderText = "корен"
+                PlaceholderText = advanced ? "корен" : "дума..."
             };
+            this.RootTextBox.Width = advanced ? this.RootTextBox.Width : (int)(this.RootTextBox.Width * 5.5);
             this.RootTextBox.TextChanged += (sender, args) =>
             {
                 this.Word.Root = this.RootTextBox.Text.ToUpperInvariant();
@@ -65,8 +68,10 @@ namespace kSlovnik.Controls
                 Top = this.PrefixTextBox.Top,
                 Left = this.RootTextBox.Right,
                 TextAlign = HorizontalAlignment.Left,
-                PlaceholderText = "наставки"
+                PlaceholderText = "наставки",
+                Visible = advanced
             };
+            if (!advanced) this.SuffixTextBox.Width = 0;
             this.SuffixTextBox.TextChanged += (sender, args) =>
             {
                 this.Word.Suffixes = this.SuffixTextBox.Text?.ToUpperInvariant().Split('-', StringSplitOptions.RemoveEmptyEntries).ToList();
@@ -80,8 +85,10 @@ namespace kSlovnik.Controls
                 Top = this.PrefixTextBox.Top,
                 Left = this.SuffixTextBox.Right,
                 TextAlign = HorizontalAlignment.Left,
-                PlaceholderText = "окончание"
+                PlaceholderText = "окончание",
+                Visible = advanced
             };
+            if (!advanced) this.EndingTextBox.Width = 0;
             this.EndingTextBox.TextChanged += (sender, args) =>
             {
                 this.Word.Ending = this.EndingTextBox.Text?.ToUpperInvariant();
@@ -95,8 +102,10 @@ namespace kSlovnik.Controls
                 Top = this.PrefixTextBox.Top,
                 Left = this.EndingTextBox.Right,
                 TextAlign = HorizontalAlignment.Left,
-                PlaceholderText = "опр. член"
+                PlaceholderText = "опр. член",
+                Visible = advanced
             };
+            if (!advanced) this.DefiniteArticleTextBox.Width = 0;
             this.DefiniteArticleTextBox.TextChanged += (sender, args) =>
             {
                 this.Word.DefiniteArticle = this.DefiniteArticleTextBox.Text?.ToUpperInvariant();

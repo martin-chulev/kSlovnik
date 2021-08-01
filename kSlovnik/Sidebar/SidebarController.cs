@@ -89,16 +89,16 @@ namespace kSlovnik.Sidebar
             saveSubButton.Click += SaveSubButton_Click;
             fileButton.DropDownItems.Add(saveSubButton);
 
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Запиши като...", withSeparator: true, enabled: false));
+            //TODO: fileButton.DropDownItems.Add(new MenuDropDownItem("Запиши като...", withSeparator: true, enabled: false));
 
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Печат...", enabled: false));
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Печат Инициализация...", withSeparator: true, enabled: false));
+            //TODO: fileButton.DropDownItems.Add(new MenuDropDownItem("Печат...", enabled: false));
+            //TODO: fileButton.DropDownItems.Add(new MenuDropDownItem("Печат Инициализация...", withSeparator: true, enabled: false));
 
-            fileButton.DropDownItems.Add(new MenuDropDownItem("Последни Игри", withSeparator: true, enabled: false));
+            //TODO: fileButton.DropDownItems.Add(new MenuDropDownItem("Последни Игри", withSeparator: true, enabled: false));
 
             var exitSubButton = new MenuDropDownItem("Изход", enabled: true);
             exitSubButton.Click += ExitSubButton_Click;
-            fileButton.DropDownItems.Add(exitSubButton);
+            //TODO: fileButton.DropDownItems.Add(exitSubButton);
             #endregion
             Sidebar.Menu.Items.Add(fileButton);
             #endregion
@@ -113,17 +113,18 @@ namespace kSlovnik.Sidebar
             var newGameSubButton = new MenuDropDownItem("Нова Игра", enabled: true);
             newGameSubButton.Click += NewGameSubButton_Click;
             gameButton.DropDownItems.Add(newGameSubButton);
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Мрежова Игра...", withSeparator: true, enabled: false));
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Играчи...", enabled: false));
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Постижения", withSeparator: true, enabled: false));
-            var dictionarySubButton = new MenuDropDownItem("Речник", enabled: true);
+            //TODO: gameButton.DropDownItems.Add(new MenuDropDownItem("Нова Мрежова Игра...", withSeparator: true, enabled: false));
+            //TODO: gameButton.DropDownItems.Add(new MenuDropDownItem("Играчи...", enabled: false));
+            //TODO: gameButton.DropDownItems.Add(new MenuDropDownItem("Постижения", withSeparator: true, enabled: false));
+            /*var dictionarySubButton = new MenuDropDownItem("Речник", enabled: true);
             dictionarySubButton.Click += DictionarySubButton_Click;
-            gameButton.DropDownItems.Add(dictionarySubButton);
+            gameButton.DropDownItems.Add(dictionarySubButton);*/
             /*var processWordsSubButton = new MenuDropDownItem("Валидация на думи", enabled: true);
             processWordsSubButton.Click += (sender, args) => { WordController.ProcessPendingWords(); };
             gameButton.DropDownItems.Add(processWordsSubButton);*/
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Трудност", withSeparator: true, enabled: false));
-            gameButton.DropDownItems.Add(new MenuDropDownItem("Изглед", enabled: false));
+            
+            //TODO: gameButton.DropDownItems.Add(new MenuDropDownItem("Трудност", withSeparator: true, enabled: false));
+            //TODO: gameButton.DropDownItems.Add(new MenuDropDownItem("Изглед", enabled: false));
             var soundsSubButton = new MenuDropDownItem("Звуци", isToggled: UserSettings.SoundsOn, enabled: true);
             soundsSubButton.Click += SoundsSubButton_Click;
             gameButton.DropDownItems.Add(soundsSubButton);
@@ -142,7 +143,25 @@ namespace kSlovnik.Sidebar
             helpButton.DropDownItems.Add(new MenuDropDownItem("Правила...", withSeparator: true, enabled: false));
             helpButton.DropDownItems.Add(new MenuDropDownItem("Относно КръстоСловник...", enabled: false));
             #endregion
-            Sidebar.Menu.Items.Add(helpButton);
+            //TODO: Sidebar.Menu.Items.Add(helpButton);
+            #endregion
+            #region Dictionary
+            var dictionaryButton = new MenuItem("Речник", ImageController.LetterImagesActive['~'])
+            {
+                Width = Sidebar.Menu.Width / 3,
+                Height = Sidebar.Menu.Height
+            };
+            #region Dictionary dropdown items
+            dictionaryButton.DropDown = new MenuDropDown();
+            var addWordSubButton = new MenuDropDownItem("Добави дума", withSeparator: true, enabled: true);
+            addWordSubButton.Click += AddWordSubButton_Click;
+            dictionaryButton.DropDownItems.Add(addWordSubButton);
+
+            var dictionarySubButton = new MenuDropDownItem("Отвори речник", enabled: true);
+            dictionarySubButton.Click += DictionarySubButton_Click;
+            dictionaryButton.DropDownItems.Add(dictionarySubButton);
+            #endregion
+            Sidebar.Menu.Items.Add(dictionaryButton);
             #endregion
             #endregion
             #endregion
@@ -402,6 +421,19 @@ namespace kSlovnik.Sidebar
         {
             if (Game.Game.Save(autosave: false))
                 MessageBox.Show("Играта е запазена");
+        }
+
+        private static void AddWordSubButton_Click(object sender, EventArgs e)
+        {
+            var prompt = new DictionaryWordPrompt(advanced: false) { Text = "Добавяне на дума в речника" };
+            var wordAdded = prompt.ShowDialog() == DialogResult.OK;
+            if (wordAdded)
+            {
+                WordController.SaveWords();
+                WordController.LoadWords();
+                Game.Game.Current.TurnErrors.Clear();
+                SidebarController.RenderWords();
+            }
         }
 
         private static void DictionarySubButton_Click(object sender, EventArgs e)

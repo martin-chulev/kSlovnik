@@ -107,7 +107,7 @@ namespace kSlovnik.Controls
                 var saveFilePaths = Directory.GetFiles(Constants.SavesFolder).Where(p => Path.GetFileName(p).EndsWith(".save")).ToList();
 
                 gameList.LargeImageList = new ImageList();
-                gameList.LargeImageList.ImageSize = new Size(Math.Min(gameList.Size.Width, 320), Math.Min(gameList.Size.Height, 320));
+                gameList.LargeImageList.ImageSize = new Size(Math.Min(gameList.Size.Width, 256), Math.Min(gameList.Size.Height, 256));
                 foreach (var saveFilePath in saveFilePaths)
                 {
                     var fileName = Path.GetFileName(saveFilePath);
