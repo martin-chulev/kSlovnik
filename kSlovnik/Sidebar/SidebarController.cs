@@ -160,6 +160,10 @@ namespace kSlovnik.Sidebar
             var dictionarySubButton = new MenuDropDownItem("Отвори речник", enabled: true);
             dictionarySubButton.Click += DictionarySubButton_Click;
             dictionaryButton.DropDownItems.Add(dictionarySubButton);
+
+            var processWordsSubButton = new MenuDropDownItem("Презареждане на думи", enabled: true);
+            processWordsSubButton.Click += ProcessWordsButton_Click;
+            dictionaryButton.DropDownItems.Add(processWordsSubButton);
             #endregion
             Sidebar.Menu.Items.Add(dictionaryButton);
             #endregion
@@ -429,8 +433,8 @@ namespace kSlovnik.Sidebar
             var wordAdded = prompt.ShowDialog() == DialogResult.OK;
             if (wordAdded)
             {
-                WordController.SaveWords();
-                WordController.LoadWords();
+                //WordController.SaveWords();
+                //WordController.LoadWords();
                 Game.Game.Current.TurnErrors.Clear();
                 SidebarController.RenderWords();
             }
@@ -440,6 +444,12 @@ namespace kSlovnik.Sidebar
         {
             var dictionaryWindow = new DictionaryEditor(Program.MainView);
             dictionaryWindow.Show();
+        }
+
+        private static void ProcessWordsButton_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Зареждане на думите от файлове?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+                WordController.ProcessWordsFromFilesToDb();
         }
 
         private static void SoundsSubButton_Click(object sender, EventArgs e)

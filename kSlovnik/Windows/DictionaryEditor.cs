@@ -101,7 +101,7 @@ namespace kSlovnik.Windows
             {
                 this.SameRootList.DataSource = null;
                 this.SimilarWordsList.DataSource = null;
-                this.WordLabel.Text = "Зарежда се...";
+                this.WordLabel.Invoke((MethodInvoker)delegate { this.WordLabel.Text = "Зарежда се..."; });
                 Task.Run(() => WordList_SelectedIndexChanged(sender));
             };
             this.Controls.Add(this.WordList);
@@ -552,11 +552,11 @@ namespace kSlovnik.Windows
         private void ToggleButtons(bool enabled)
         {
             //if (ButtonAdd != null) ButtonAdd.Enabled = enabled;
-            if (ButtonEdit != null) ButtonEdit.Enabled = enabled;
-            if (ButtonRemove != null) ButtonRemove.Enabled = enabled;
-            if (ButtonApprove != null) ButtonApprove.Enabled = enabled;
-            if (ButtonReject != null) ButtonReject.Enabled = enabled;
-            if (ButtonSetPending != null) ButtonSetPending.Enabled = enabled;
+            if (ButtonEdit != null) ButtonEdit.Invoke((MethodInvoker)delegate { ButtonEdit.Enabled = enabled; });
+            if (ButtonRemove != null) ButtonRemove.Invoke((MethodInvoker)delegate { ButtonRemove.Enabled = enabled; });
+            if (ButtonApprove != null) ButtonApprove.Invoke((MethodInvoker)delegate { ButtonApprove.Enabled = enabled; });
+            if (ButtonReject != null) ButtonReject.Invoke((MethodInvoker)delegate { ButtonReject.Enabled = enabled; });
+            if (ButtonSetPending != null) ButtonSetPending.Invoke((MethodInvoker)delegate { ButtonSetPending.Enabled = enabled; });
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)

@@ -176,6 +176,8 @@ namespace kSlovnik.Controls
             }
 
             WordController.Approve(this.Word);
+            WordController.SaveWordInDb(this.Word);
+            WordController.GroupWordByLength(this.Word);
             this.Close();
         }
     }

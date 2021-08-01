@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Forms;
+using Microsoft.Data.Sqlite;
 
 namespace kSlovnik.Resources
 {
@@ -33,7 +34,67 @@ namespace kSlovnik.Resources
         public static HashSet<DictionaryWord> ApprovedWords = new HashSet<DictionaryWord>();
         public static Dictionary<int, HashSet<string>> WordsByLength = new Dictionary<int, HashSet<string>>();
 
+        public static void ProcessWordsFromFilesToDb()
+        {
+            LoadWordsFromFiles();
+            SaveWordsInDb();
+            LoadWordsFromDb();
+        }
+
         public static void LoadWords()
+        {
+            LoadWordsFromDb();
+        }
+
+        public static void LoadWordsFromDb()
+        {
+            PendingWords.Clear();
+            InvalidLengthWords.Clear();
+            InvalidCharactersWords.Clear();
+            InvalidMiscWords.Clear();
+            ApprovedWords.Clear();
+            WordsByLength.Clear();
+
+            using var dbConnection = new SqliteConnection("Data Source=" + Path.Combine(Path.GetFullPath(ProcessedWordsFilePath), "Dictionary.db"));
+            dbConnection.Open();
+            var command = dbConnection.CreateCommand();
+
+            command.CommandText = "CREATE TABLE IF NOT EXISTS Words (Prefix TEXT NOT NULL, Root TEXT NOT NULL, Suffix TEXT NOT NULL, Ending TEXT NOT NULL, DefiniteArticle TEXT NOT NULL, IsApproved INTEGER, " +
+                                                       "PRIMARY KEY (Prefix, Root, Suffix, Ending, DefiniteArticle)) WITHOUT ROWID";
+            command.ExecuteNonQuery();
+
+            command.CommandText = "SELECT iif(Prefix IS NULL, \"\", Prefix), " +
+                                         "iif(Root IS NULL, \"\", Root), " +
+                                         "iif(Suffix IS NULL, \"\", Suffix), " +
+                                         "iif(Ending IS NULL, \"\", Ending), " +
+                                         "iif(DefiniteArticle IS NULL, \"\", DefiniteArticle), " +
+                                         "IsApproved " +
+                                         "FROM Words";
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var word = new DictionaryWord();
+                word.Prefixes = new List<string>(((string)reader[0]).Split('-', StringSplitOptions.RemoveEmptyEntries));
+                word.Root = (string)reader[1];
+                word.Suffixes = new List<string>(((string)reader[2]).Split('-', StringSplitOptions.RemoveEmptyEntries));
+                word.Ending = (string)reader[3];
+                word.DefiniteArticle = (string)reader[4];
+
+                //MessageBox.Show(reader[5].ToString());
+                if (reader[5] == DBNull.Value || (long?)reader[5] == null)
+                {
+                    PendingWords.Add(word);
+                }
+                else if ((long?)reader[5] == 1)
+                {
+                    ApprovedWords.Add(word);
+                }
+            }
+
+            GroupWordsByLength();
+        }
+
+        public static void LoadWordsFromFiles()
         {
             PendingWords.Clear();
             if (File.Exists(ProcessedPendingPath)) PendingWords.UnionWith(JsonSerializer.Deserialize<HashSet<DictionaryWord>>(File.ReadAllText(ProcessedPendingPath)));
@@ -55,12 +116,26 @@ namespace kSlovnik.Resources
             if (File.Exists(ProcessedApprovedPath)) ApprovedWords.UnionWith(JsonSerializer.Deserialize<HashSet<DictionaryWord>>(File.ReadAllText(ProcessedApprovedPath)));
             else if (File.Exists(BaseApprovedPath)) ApprovedWords.UnionWith(File.ReadAllText(BaseApprovedPath).Split(',', StringSplitOptions.RemoveEmptyEntries).Select(w => new DictionaryWord { Root = w.Trim().ToUpperInvariant(), IsApproved = true }));
 
+            GroupWordsByLength();
+        }
+
+        public static void GroupWordsByLength()
+        {
             WordsByLength.Clear();
             for (int i = Constants.MinimumWordLength; i <= Math.Max(Board.Board.Rows, Board.Board.Columns); i++)
             {
                 WordsByLength.Add(i, new HashSet<string>());
                 WordsByLength[i].UnionWith(ApprovedWords.Where(w => w.FullWord.Length == i).Select(w => w.FullWord));
                 WordsByLength[i].UnionWith(PendingWords.Where(w => w.FullWord.Length == i).Select(w => w.FullWord));
+            }
+        }
+
+        public static void GroupWordByLength(DictionaryWord word)
+        {
+            var fullWord = word.FullWord;
+            if (fullWord.Length >= Constants.MinimumWordLength && fullWord.Length <= Math.Max(Board.Board.Rows, Board.Board.Columns))
+            {
+                WordsByLength[fullWord.Length].Add(fullWord);
             }
         }
 
@@ -127,6 +202,77 @@ namespace kSlovnik.Resources
         }
 
         public static void SaveWords()
+        {
+            SaveWordsInDb();
+        }
+
+        public static void SaveWordsInDb()
+        {
+            using var dbConnection = new SqliteConnection("Data Source=" + Path.Combine(Path.GetFullPath(ProcessedWordsFilePath), "Dictionary.db"));
+            dbConnection.Open();
+
+            var command = dbConnection.CreateCommand();
+            command.CommandText = "CREATE TABLE IF NOT EXISTS Words (Prefix TEXT NOT NULL, Root TEXT NOT NULL, Suffix TEXT NOT NULL, Ending TEXT NOT NULL, DefiniteArticle TEXT NOT NULL, IsApproved INTEGER, " +
+                                                       "PRIMARY KEY (Prefix, Root, Suffix, Ending, DefiniteArticle)) WITHOUT ROWID";
+            command.ExecuteNonQuery();
+
+            command.CommandText = "BEGIN";
+            command.ExecuteNonQuery();
+
+            foreach (var word in PendingWords)
+            {
+                SaveWordInDb(dbConnection, word);
+            }
+            foreach (var word in ApprovedWords)
+            {
+                SaveWordInDb(dbConnection, word);
+            }
+
+            command.CommandText = "END";
+            command.ExecuteNonQuery();
+            dbConnection.Close();
+        }
+
+        public static void SaveWordInDb(DictionaryWord word)
+        {
+            using var dbConnection = new SqliteConnection("Data Source=" + Path.Combine(Path.GetFullPath(ProcessedWordsFilePath), "Dictionary.db"));
+            dbConnection.Open();
+            SaveWordInDb(dbConnection, word);
+            dbConnection.Close();
+        }
+
+        public static void SaveWordInDb(SqliteConnection dbConnection, DictionaryWord word)
+        {
+            try
+            {
+                var command = dbConnection.CreateCommand();
+                command.CommandText = "INSERT INTO Words(Prefix, Root, Suffix, Ending, DefiniteArticle, IsApproved) VALUES(@Prefix, @Root, @Suffix, @Ending, @DefiniteArticle, @IsApproved)";
+                command.Parameters.AddWithValue("@Prefix", string.Join('-', word.Prefixes));
+                command.Parameters.AddWithValue("@Root", word.Root);
+                command.Parameters.AddWithValue("@Suffix", string.Join('-', word.Suffixes));
+                command.Parameters.AddWithValue("@Ending", word.Ending);
+                command.Parameters.AddWithValue("@DefiniteArticle", word.DefiniteArticle);
+
+                if (word.IsApproved == null) command.Parameters.AddWithValue("@IsApproved", DBNull.Value);
+                else if (word.IsApproved == false) command.Parameters.AddWithValue("@IsApproved", "0");
+                else if (word.IsApproved == true) command.Parameters.AddWithValue("@IsApproved", "1");
+
+                command.ExecuteNonQuery();
+            }
+            catch (Exception e)
+            {
+                if (e.Message.StartsWith("SQLite Error 19:"))
+                {
+                    MessageBox.Show($"Думата {word.FullWord} вече съществува.");
+                }
+                else
+                {
+                    MessageBox.Show($"Грешка при добавяне на думата {word.FullWord} - {e.Message} | {e.InnerException?.Message}");
+                }
+            }
+        }
+
+        public static void SaveWordsInFiles()
         {
             File.WriteAllText(ProcessedPendingPath, JsonSerializer.Serialize(PendingWords, new JsonSerializerOptions { WriteIndented = true }));
             File.WriteAllText(ProcessedInvalidLengthPath, JsonSerializer.Serialize(InvalidLengthWords, new JsonSerializerOptions { WriteIndented = true }));
