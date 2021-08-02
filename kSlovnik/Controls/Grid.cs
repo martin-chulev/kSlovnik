@@ -263,6 +263,7 @@ namespace kSlovnik.Controls
             public string PropertyName { get; set; }
             public string Header { get; set; }
             public Func<T, object, bool> ShowValue { get; set; }
+            public Func<T, string> GetValue { get; set; }
             public int WidthPercent { get; set; } // TODO: Add checks or scale percentages of all headers down if >100
             public ContentAlignment TextAlign { get; set; }
 
@@ -271,13 +272,14 @@ namespace kSlovnik.Controls
             {
             }
 
-            public Column(string propertyName, string text, int widthPercent, ContentAlignment textAlign, Func<T, object, bool> showValue)
+            public Column(string propertyName, string text, int widthPercent, ContentAlignment textAlign, Func<T, object, bool> showValue, Func<T, string> getValue = null)
             {
                 this.PropertyName = propertyName;
                 this.Header = text;
                 this.WidthPercent = widthPercent;
                 this.TextAlign = textAlign;
                 this.ShowValue = showValue;
+                this.GetValue = getValue;
             }
         }
 
@@ -365,7 +367,9 @@ namespace kSlovnik.Controls
                     if (control is Cell cell)
                     {
                         var i = cell.Index;
-                        var data = this.Columns[i].PropertyName != null && item != null ? typeof(T).GetProperty(this.Columns[i].PropertyName)?.GetValue(item) : null;
+                        var data = this.Columns[i].GetValue != null ?
+                                    this.Columns[i].GetValue.Invoke(item) :
+                                    this.Columns[i].PropertyName != null && item != null ? typeof(T).GetProperty(this.Columns[i].PropertyName)?.GetValue(item) : null;
                         cell.Value = this.Columns[i].ShowValue(item, data) == true ? data : null;
                         cell.TextAlign = cell.DefaultContentAlign;
                         cell.ImageAlign = cell.DefaultContentAlign;

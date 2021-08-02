@@ -13,6 +13,7 @@ namespace kSlovnik
     public static class Constants
     {
         public static readonly string SavesFolder = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "Saves");
+        public const string DatabaseDateTimeFormat = "yyyy-MM-dd HH-mm-ss";
 
         public static class Colors
         {
@@ -99,6 +100,7 @@ namespace kSlovnik
             public const string PiecesInDeck = "Налични пулове: {0}";
             public const string TurnPoints = "Успешен ход - {0} точки.";
             public const string ComputerThinking = "Компютърът мисли...";
+            public const string Highscores = "Най-високи резултати:";
 
             public const string ChooseLetterPromptText = "Изберете буква:";
         }

@@ -4,8 +4,10 @@ using kSlovnik.Piece;
 using kSlovnik.Player;
 using kSlovnik.Resources;
 using kSlovnik.Sidebar;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -436,9 +438,38 @@ namespace kSlovnik.Game
 
         public static void EndGame(Constants.GameEndReason reason)
         {
+            SidebarController.ToggleMenu(true);
+
             if (reason != Constants.GameEndReason.Forced)
             {
                 var players = Game.Current.Players.OrderByDescending(p => p.Score).ToList();
+
+                using var dbConnection = new SqliteConnection("Data Source=" + Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "Game.db"));
+                dbConnection.Open();
+
+                var command = dbConnection.CreateCommand();
+                command.CommandText = "CREATE TABLE IF NOT EXISTS Scores(Player TEXT NOT NULL, Score INTEGER NOT NULL, Timestamp TEXT NOT NULL)";
+                command.ExecuteNonQuery();
+
+                command.CommandText = "BEGIN";
+                command.ExecuteNonQuery();
+
+                foreach (var player in players)
+                {
+                    var insertCommand = dbConnection.CreateCommand();
+                    insertCommand.CommandText = "INSERT INTO Scores(Player, Score, Timestamp) VALUES(@Player, @Score, @Timestamp)";
+                    insertCommand.Parameters.AddWithValue("@Player", player.Name);
+                    insertCommand.Parameters.AddWithValue("@Score", player.Score);
+                    insertCommand.Parameters.AddWithValue("@Timestamp", DateTime.Now.ToString(Constants.DatabaseDateTimeFormat));
+                    insertCommand.ExecuteNonQuery();
+                }
+
+                command.CommandText = "END";
+                command.ExecuteNonQuery();
+                dbConnection.Close();
+
+                SidebarController.RenderHighscores();
+
                 var winners = players.Where(p => p.Score == players[0].Score).ToList();
 
                 var winText = winners.Count switch

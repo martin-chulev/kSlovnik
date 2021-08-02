@@ -28,7 +28,7 @@ namespace kSlovnik.Generic
         public List<string> Suffixes { get; set; } = new List<string>();
 
         /// <summary>
-        /// Окончание
+        /// Окончание.
         /// </summary>
         [JsonPropertyName("End")]
         public string Ending { get; set; } = string.Empty;

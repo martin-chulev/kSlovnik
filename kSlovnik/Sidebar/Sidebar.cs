@@ -28,6 +28,7 @@ namespace kSlovnik.Sidebar
         public static Label TurnPointsLabel;
         public static ShadowedPanel WordsContainer;
         public static Grid<Word> WordsGrid;
+        public static Grid<Score> HighscoresGrid;
         public static ToolTip ToolTip;
 
         public static Point HandLocation;

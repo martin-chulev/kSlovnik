@@ -5,10 +5,12 @@ using kSlovnik.Piece;
 using kSlovnik.Player;
 using kSlovnik.Resources;
 using kSlovnik.Windows;
+using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -340,7 +342,7 @@ namespace kSlovnik.Sidebar
 
             currentStartingY += Sidebar.TurnPointsLabel.Height + Constants.SidebarSeparatorHeight / 2;
 
-            #region Current words
+            #region Current words/Highscores
             Sidebar.WordsContainer = new ShadowedPanel
             {
                 Location = new Point(Constants.Padding.Left, currentStartingY),
@@ -350,12 +352,15 @@ namespace kSlovnik.Sidebar
             };
             Sidebar.WordsContainer.DropShadow();
             Sidebar.SidebarPanel.Controls.Add(Sidebar.WordsContainer);
+
+            #region Current words
             Sidebar.WordsGrid = new Grid<Word>(Constants.Fonts.WordsGrid)
             {
                 Location = new Point(0, 0),
                 Width = sidebarContentWidth,
                 Height = Sidebar.WordsContainer.Height,
-                BackColor = Constants.Colors.GridBackColor
+                BackColor = Constants.Colors.GridBackColor,
+                Visible = true
             };
             Sidebar.WordsGrid.StylesApplied += new Grid<Word>.ExtraStyleFilter((Grid<Word>.Row row, Word word) =>
             {
@@ -365,12 +370,31 @@ namespace kSlovnik.Sidebar
                     row.ForeColor = word.IsValid ? Constants.Colors.FontBlue : Constants.Colors.FontRed;
                 }
             });
-            Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.IsValid), null, 10, ContentAlignment.MiddleCenter, new Func<Word, object, bool>((word, data) => word != null ? word.IsValid : false)));
+            Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.IsValid), null, 10, ContentAlignment.MiddleCenter, (word, data) => word != null ? word.IsValid : false));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.Text), "Думи", 55, ContentAlignment.MiddleLeft));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(nameof(Word.Points), "Точки", 25, ContentAlignment.MiddleRight));
             Sidebar.WordsGrid.Columns.Add(new Grid<Word>.Column(null, null, 10, ContentAlignment.MiddleRight));
             Sidebar.WordsGrid.Init(12, stretchRows: true);
             Sidebar.WordsContainer.Controls.Add(Sidebar.WordsGrid);
+            #endregion
+
+            #region Highscores
+            Sidebar.HighscoresGrid = new Grid<Score>(Constants.Fonts.WordsGrid)
+            {
+                Location = new Point(0, 0),
+                Width = sidebarContentWidth,
+                Height = Sidebar.WordsContainer.Height,
+                BackColor = Constants.Colors.GridBackColor,
+                Visible = false
+            };
+            Sidebar.HighscoresGrid.Columns.Add(new Grid<Score>.Column(null, null, 5, ContentAlignment.MiddleCenter));
+            Sidebar.HighscoresGrid.Columns.Add(new Grid<Score>.Column(nameof(Score.Player), "Играч", 35, ContentAlignment.MiddleLeft));
+            Sidebar.HighscoresGrid.Columns.Add(new Grid<Score>.Column(nameof(Score.Points), "Точки", 30, ContentAlignment.MiddleCenter));
+            Sidebar.HighscoresGrid.Columns.Add(new Grid<Score>.Column(nameof(Score.Timestamp), "Дата", 25, ContentAlignment.MiddleRight, (score, data) => true, (score) => score?.Timestamp.ToString("dd.MM.yyyy")));
+            Sidebar.HighscoresGrid.Columns.Add(new Grid<Score>.Column(null, null, 5, ContentAlignment.MiddleCenter));
+            Sidebar.HighscoresGrid.Init(12, stretchRows: true);
+            Sidebar.WordsContainer.Controls.Add(Sidebar.HighscoresGrid);
+            #endregion
             #endregion
         }
 
@@ -531,6 +555,12 @@ namespace kSlovnik.Sidebar
                 Sidebar.ButtonReset.BackColor = enabled ? Constants.Colors.ButtonColorBackActive : Constants.Colors.ButtonColorBackInactive;
                 Sidebar.ButtonReset.ForeColor = enabled ? Constants.Colors.ButtonColorForeActive : Constants.Colors.ButtonColorForeInactive;
             });
+            
+            ToggleMenu(enabled);
+        }
+
+        public static void ToggleMenu(bool enabled)
+        {
             Sidebar.Menu.Invoke((MethodInvoker)delegate
             {
                 Sidebar.Menu.Enabled = enabled;
@@ -595,9 +625,44 @@ namespace kSlovnik.Sidebar
                     }
                     words.AddRange(bonuses);
                 }
-                Sidebar.WordsGrid.DataSource = words;
+                if(Sidebar.WordsGrid.Visible == false || Sidebar.HighscoresGrid.Visible == true)
+                {
+                    Sidebar.HighscoresGrid.Invoke((MethodInvoker)delegate { Sidebar.HighscoresGrid.Visible = false; });
+                    Sidebar.WordsGrid.Invoke((MethodInvoker)delegate { Sidebar.WordsGrid.Visible = true; });
+                }
+                Sidebar.WordsGrid.Invoke((MethodInvoker)delegate { Sidebar.WordsGrid.DataSource = words; });
             }
             RenderTurnPointsLabel(points);
+        }
+
+        public static void RenderHighscores()
+        {
+            using var dbConnection = new SqliteConnection("Data Source=" + Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location), "Game.db"));
+            dbConnection.Open();
+
+            var command = dbConnection.CreateCommand();
+            command.CommandText = "SELECT Player, Score, Timestamp FROM Scores ORDER BY Score DESC LIMIT 10";
+
+            List<Score> scores = new List<Score>();
+            var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                scores.Add(new Score
+                {
+                    Player = (string)reader[0],
+                    Points = (int)(long)reader[1],
+                    Timestamp = DateTime.ParseExact((string)reader[2], Constants.DatabaseDateTimeFormat, System.Globalization.CultureInfo.InvariantCulture)
+                });
+            }
+            Sidebar.TurnPointsLabel.Invoke((MethodInvoker)delegate { Sidebar.TurnPointsLabel.Text = Constants.Texts.Highscores; });
+            if (Sidebar.HighscoresGrid.Visible == false || Sidebar.WordsGrid.Visible == true)
+            {
+                Sidebar.WordsGrid.Invoke((MethodInvoker)delegate { Sidebar.WordsGrid.Visible = false; });
+                Sidebar.HighscoresGrid.Invoke((MethodInvoker)delegate { Sidebar.HighscoresGrid.Visible = true; });
+            }
+            Sidebar.HighscoresGrid.Invoke((MethodInvoker)delegate { Sidebar.HighscoresGrid.DataSource = scores; });
+
+            dbConnection.Close();
         }
     }
 }
